@@ -102,13 +102,13 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\src;..\src\nnue</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src;..\src\nnue;lunasvg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -121,14 +121,14 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>None</DebugInformationFormat>
       <OmitFramePointers>true</OmitFramePointers>
       <CallingConvention>FastCall</CallingConvention>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\src;..\src\nnue</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src;..\src\nnue;lunasvg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -154,10 +154,10 @@
     </Link>
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PreprocessorDefinitions>_64BIT;SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;_64BIT;SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\src;..\src\nnue</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src;..\src\nnue;lunasvg\include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,8 +171,8 @@
     </Link>
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PreprocessorDefinitions>_64BIT;SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\src;..\src\nnue</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;_64BIT;SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src;..\src\nnue;lunasvg\include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -278,7 +278,140 @@
     <ClCompile Include="ShowGame.cpp" />
     <ClCompile Include="srclimit.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="svgpieces.cpp" />
     <ClCompile Include="timectrl.cpp" />
+  </ItemGroup>
+  <!-- Vendored lunasvg + plutovg (built statically into the GUI). Per-file
+       settings: internal include dirs, static-build defines, reduced warning
+       level, and Cdecl under Release|Win32 (project default there is FastCall,
+       which is incompatible with plutovg's __cdecl qsort comparator). -->
+  <ItemGroup>
+    <ClCompile Include="lunasvg\source\graphics.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\lunasvg.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svgelement.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svggeometryelement.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svglayoutstate.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svgpaintelement.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svgparser.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svgproperty.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svgrenderstate.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\source\svgtextelement.cpp">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-blend.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-canvas.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-font.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-ft-math.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-ft-raster.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-ft-stroker.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-matrix.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-paint.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-path.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-rasterize.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
+    <ClCompile Include="lunasvg\plutovg\source\plutovg-surface.c">
+      <AdditionalIncludeDirectories>lunasvg\include;lunasvg\source;lunasvg\plutovg\include;lunasvg\plutovg\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LUNASVG_BUILD;PLUTOVG_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level1</WarningLevel>
+      <CallingConvention Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Cdecl</CallingConvention>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\attacks.h" />
@@ -357,6 +490,7 @@
     <ClInclude Include="showgame.h" />
     <ClInclude Include="srclimit.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="svgpieces.h" />
     <ClInclude Include="timectrl.h" />
   </ItemGroup>
   <ItemGroup>

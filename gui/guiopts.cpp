@@ -106,6 +106,7 @@ void GuiOptions::save()
          app->WriteProfileString("Appearance","Board Size","XXLarge"); break;
    }
    app->WriteProfileString("Appearance","Font",appr.pieceFontName.c_str());
+   app->WriteProfileString("Appearance","Piece Set",appr.pieceSet.c_str());
    app->WriteProfileString("Appearance","Show Coordinates",boolString(appr.show_coordinates));
    app->WriteProfileInt("Appearance","Light Square Color",appr.lightSquareColor);
    app->WriteProfileInt("Appearance","Dark Square Color",appr.darkSquareColor);
@@ -173,6 +174,7 @@ app(guiApp)
    opt_str = app->GetProfileString("Appearance","Show Coordinates","True");
    appr.show_coordinates = opt_str == "True";
    appr.pieceFontName = app->GetProfileString("Appearance","Font","Chess Berlin");
+   appr.pieceSet = app->GetProfileString("Appearance","Piece Set","rhosgfx");
 
    appX = app->GetProfileInt("Location","x",50);
    appY = app->GetProfileInt("Location","y",50);

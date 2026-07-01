@@ -6,6 +6,7 @@
 #include "board.h"
 #include "stats.h"
 #include "guiopts.h"
+#include "svgpieces.h"
 
 class Display
 {
@@ -56,51 +57,41 @@ class Display
          return turned;
       }
 
-      CFont &getPieceFont() {
-         return pieceFont;
-      }
+      // Load and rasterize the named SVG piece set at the given board size.
+      void setPieceSet(CDC *pDC, LPCSTR setName, GuiOptions::BoardSize boardSize);
 
+      // Inert: the chess piece font has been replaced by SVG pieces. Retained
+      // so the Appearance font dialog still links; removed in Phase 3.
       void setPieceFont(CDC *pDC, LPCSTR fontName, GuiOptions::BoardSize boardSize);
 
       static void calcWindowSize(GuiOptions::BoardSize boardSize, int &x, int &y);
 
-      static int calcFontSize(GuiOptions::BoardSize boardSize);
+      // Square edge length in pixels for a given board size.
+      static int calcSquareSize(GuiOptions::BoardSize boardSize);
 
+      // Mono display support was dropped; always false. Retained for Phase 3.
       int is_mono() const
       {
-         return mono;
+         return 0;
       }
 
       void getSquareRect(Square sq,BOOL turned,CRect &loc);
 
-   protected:
-      void setPieceFont( CDC *pDC, const LPLOGFONT font ) {
-         pieceFont.Detach();
-         pieceFont.CreateFontIndirect(font);
-         updatePieceFont(pDC);
-      }
-
-      void updatePieceFont(CDC *pDC);
-
    private:
       void clearRect(CDC *pDC, CRect &rect);
-      CBrush *get_brush( CDC *pDC, Square sq) const;
 
-      DWORD char_width;
+      // Recompute board-relative layout from the current square size.
+      void updateLayout();
+
       static DWORD spacing;
       BOOL turned;
-      BOOL usePalette;
-      BOOL mono;
       DWORD board_right_edge;
       CRect messageRect;
       DWORD width;
       DWORD textX;
       DWORD coordX;
-      CFont pieceFont;
+      SvgPieceSet pieces;
       CWnd *myWin;
-      CPalette palette;
-      int fontSize;
-      int xDPI;
       ColorType sideToMove;
       int timeWidth;
       COLORREF messageAreaColor;

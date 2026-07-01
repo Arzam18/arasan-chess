@@ -10,3 +10,7 @@
 	path = book/chess-openings
 	url = https://github.com/lichess-org/chess-openings
         branch = master
+[submodule "gui/lunasvg"]
+	path = gui/lunasvg
+	url = https://github.com/sammycage/lunasvg.git
+        ignore = dirty

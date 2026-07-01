@@ -5,7 +5,6 @@
 #include "display.h"
 #include "resource.h"
 #include "arasan.h"
-#include "drawutil.h"
 
 #define TEXT_OFFSET             30                /* from right edge */
 #define COORD_OFFSET            5
@@ -15,32 +14,6 @@
 #define PLAYERS_Y               92
 #define RESULT_Y                175
 #define ECO_Y                   230
-
-// Piece map for "Chess Alpha" font:
-static const char *whiteSquareMapAlpha = " phbrqk  ojntwl ";
-static const char *blackSquareMapAlpha = "+PHBRQK++OJNTWL+";
-static const char *whitePieceMapAlpha = " phbrkq";
-static const char *blackPieceMapAlpha = " ojntwl";
-
-// Piece map for "Marroquin", "Maya" and similar fonts:
-static const char *whiteSquareMapMaya = " pnbrqk  omvtwl ";
-static const char *blackSquareMapMaya = "+PNBRQK++OMVTWL+";
-static const char *whitePieceMapMaya = "+OMVTWL";
-static const char *blackPieceMapMaya = " omvtwl";
-
-// Piece map for "Berlin" font:
-static const char *whiteSquareMapBerlin = " phbrqk  ojntwl ";
-static const char *blackSquareMapBerlin = "+PHBRQK++OJNTWL+";
-static const char *whitePieceMapBerlin = "+OJNTWL";
-static const char *blackPieceMapBerlin = " ojntwl";
-
-// used for black & white display:
-static const char **blackSquareMap;
-static const char **whiteSquareMap;
-
-// used for color display:
-static const char **blackPieceMap;
-static const char **whitePieceMap;
 
 static CFont *textFont = NULL;
 static CFont *coordFont = NULL;
@@ -63,12 +36,13 @@ Display::Display( CWnd *pWin, const CRect &initialSize )
 {
    myWin = pWin;
    CDC *pDC = pWin->GetDC();
-   int fontSize = calcFontSize(guiOptions->getBoardSize());
-   if (!pieceFont.CreatePointFont(fontSize,guiOptions->getPieceFontName(),pDC)) {
-      AfxMessageBox("failed to load chess font");
-      pWin->ReleaseDC(pDC);
-      return;
-   }
+   GuiOptions::BoardSize boardSize = guiOptions->getBoardSize();
+   int sz = calcSquareSize(boardSize);
+   square_width = square_height = sz;
+   if (!pieces.load(guiOptions->getPieceSet()))
+      AfxMessageBox("failed to load SVG piece set");
+   pieces.setSquareSize(sz);
+
    textFont = new CFont();
    NONCLIENTMETRICS ncm;
    TEXTMETRIC tm;
@@ -78,7 +52,6 @@ Display::Display( CWnd *pWin, const CRect &initialSize )
    CFont *oldFont = (CFont*)pDC->SelectObject(textFont);
    pDC->GetOutputTextMetrics(&tm);
 
-   char_width = tm.tmAveCharWidth;
    spacing = tm.tmHeight + tm.tmExternalLeading;
    messageAreaColor = COLORREF(0xffffff);
 
@@ -89,18 +62,7 @@ Display::Display( CWnd *pWin, const CRect &initialSize )
    pDC->DrawText("00:00:00", &timeRect, DT_CALCRECT);
    timeWidth = timeRect.Width();
 
-   UINT nColors = pDC->GetDeviceCaps(NUMCOLORS);
-   mono = (nColors <= 2);
-   if (mono) {
-      // 16- and 32-bit color modes do not seem
-      // to report NUMCOLORS correctly.
-      mono = pDC->GetDeviceCaps(BITSPIXEL) == 1 &&
-         pDC->GetDeviceCaps(PLANES) == 1;
-   }
-   usePalette = pDC->GetDeviceCaps(RASTERCAPS) & RC_PALETTE;
-
-   // now select piece font to get data from that
-   updatePieceFont(pDC);
+   updateLayout();
    pDC->SelectObject(oldFont);
    pWin->ReleaseDC(pDC);
    setSize(initialSize);
@@ -144,58 +106,38 @@ void Display::getRect( DisplayRegion region,CRect &rect)
 
 void Display::setPieceFont(CDC *pDC, LPCSTR fontName, GuiOptions::BoardSize boardSize)
 {
-   int fontSize = calcFontSize(boardSize);
-   CFont newFont;
-   if (!newFont.CreatePointFont(fontSize,fontName)) {
-      ::MessageBox(NULL,"Cannot create chess font!","Error",MB_ICONEXCLAMATION);
+   // Inert: SVG pieces have replaced the chess font. Retained so the
+   // Appearance font dialog still links; removed in Phase 3.
+}
+
+
+void Display::setPieceSet(CDC *pDC, LPCSTR setName, GuiOptions::BoardSize boardSize)
+{
+   int sz = calcSquareSize(boardSize);
+   square_width = square_height = sz;
+   if (!pieces.load(setName)) {
+      ::MessageBox(NULL,"Cannot load piece set!","Error",MB_ICONEXCLAMATION);
       return;
    }
-   LOGFONT lf;
-   newFont.GetLogFont(&lf);
-   setPieceFont(pDC,&lf);
+   pieces.setSquareSize(sz);
+   updateLayout();
 }
 
 
-void Display::resize(CDC *pDC, GuiOptions::BoardSize size)
+void Display::resize(CDC *pDC, GuiOptions::BoardSize boardSize)
 {
-   LOGFONT lf;
-   pieceFont.GetLogFont(&lf);
-   setPieceFont(pDC,lf.lfFaceName,size);
+   int sz = calcSquareSize(boardSize);
+   square_width = square_height = sz;
+   pieces.setSquareSize(sz);
+   updateLayout();
 }
 
 
-void Display::updatePieceFont(CDC *pDC)
+void Display::updateLayout()
 {
-   TEXTMETRIC piece_tm;
-   CFont *oldFont = (CFont*)pDC->SelectObject(pieceFont);
-   pDC->GetTextMetrics(&piece_tm);
-
-   square_width = piece_tm.tmMaxCharWidth;
-   square_height = piece_tm.tmHeight;
-   board_right_edge = piece_tm.tmMaxCharWidth*8 + 25;
-
-   textX = 8*square_width+TEXT_OFFSET;
-   coordX = 8*square_width+COORD_OFFSET;
-   LOGFONT lf;
-   pieceFont.GetLogFont(&lf);
-   if (strcmp(lf.lfFaceName,"Chess Alpha")==0) {
-      blackSquareMap = (const char**)&blackSquareMapAlpha;
-      whiteSquareMap = (const char**)&whiteSquareMapAlpha;
-      blackPieceMap = (const char**)&blackPieceMapAlpha;
-      whitePieceMap = (const char**)&blackPieceMapAlpha;
-   }
-   else if (strcmp(lf.lfFaceName,"Chess Berlin")==0) {
-      blackSquareMap = (const char**)&blackSquareMapBerlin;
-      whiteSquareMap = (const char**)&whiteSquareMapBerlin;
-      blackPieceMap = (const char**)&blackPieceMapBerlin;
-      whitePieceMap = (const char**)&blackPieceMapBerlin;
-   }
-   else {
-      blackSquareMap = (const char**)&blackSquareMapMaya;
-      whiteSquareMap = (const char**)&whiteSquareMapMaya;
-      blackPieceMap = (const char**)&blackPieceMapMaya;
-      whitePieceMap = (const char**)&blackPieceMapMaya;
-   }
+   board_right_edge = square_width*8 + 25;
+   textX = 8*square_width + TEXT_OFFSET;
+   coordX = 8*square_width + COORD_OFFSET;
 }
 
 
@@ -217,13 +159,6 @@ void Display::drawMessageArea(CDC *pDC, CRgn *pRgn)
 
 void Display::drawBoard( CDC *pDC, const Board &board, const CRect &drawArea, BOOL turned)
 {
-
-   pDC->SelectObject(pieceFont);
-   if (usePalette) {
-      pDC->SelectPalette(&palette,FALSE);
-      pDC->RealizePalette();
-   }
-
    int vert = 0;
    for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
@@ -244,55 +179,12 @@ void Display::drawPiece(CDC *pDC, Square sq, Piece p)
 {
    CRect loc;
    getSquareRect(sq,turned,loc);
-   // Do not draw this piece if its square is not visible
-   //if (!pDC->RectVisible(&loc)) return;
-   char text;
-   if (mono || guiOptions->getForceMono()) {
-      // use "hatched" background for dark squares, and
-      // don't try to set colors.
-      if (SquareColor(sq) == White)
-         text = (*whiteSquareMap)[p];
-      else
-         text = (*blackSquareMap)[p];
-      pDC->TextOut(loc.left,loc.top,&text,1);
-   }
-   else {
-      PieceType typeOfPiece = TypeOfPiece(p);
-      COLORREF light = guiOptions->getLightSquareColor();
-      COLORREF dark = guiOptions->getDarkSquareColor();
-      if (usePalette) {
-         // Select our own palette here
-         pDC->SelectPalette(&palette,FALSE);
-         UINT result = pDC->RealizePalette();
-      }
-
-      COLORREF oldBkColor = pDC->SetBkColor(SquareColor(sq) == White ? light : dark);
-      COLORREF oldTextColor = (PieceColor(p) == White) ?
-         pDC->SetTextColor(RGB(255,255,255)) :
-      pDC->SetTextColor(RGB(0,0,0));
-
-      CBrush squareBrush(SquareColor(sq) == White ? light : dark);
-      CBrush *oldBrush = (CBrush*)pDC->SelectObject(&squareBrush);
-      pDC->Rectangle(loc);
-      pDC->SelectObject(oldBrush);
-      if (typeOfPiece != EmptyPiece) {
-         text = PieceColor(p) == White ?
-            (*whitePieceMap)[typeOfPiece] : (*blackPieceMap)[typeOfPiece];
-         CString str="";
-         str += text;
-         // for some reason drawing the text in OPAQUE mode does not work well on
-         // palette displays. Set the mode TRANSPARENT, since we have already drawn
-         // the square background with the Rectangle call, above.
-         pDC->SetBkMode(TRANSPARENT);
-         pDC->TextOut(loc.left,loc.top,str);
-         // Draw outline around White pieces (unfortunately this
-         // does not do anti-aliasing).
-         if (PieceColor(p) == White) DrawUtil::Draw(pDC,loc,&text);
-      }
-      pDC->SetBkColor(oldBkColor);
-      pDC->SetTextColor(oldTextColor);
-
-   }
+   // Draw the colored square background, then composite the (transparent)
+   // SVG piece over it.
+   COLORREF light = guiOptions->getLightSquareColor();
+   COLORREF dark = guiOptions->getDarkSquareColor();
+   pDC->FillSolidRect(loc, SquareColor(sq) == White ? light : dark);
+   pieces.blit(pDC,loc.left,loc.top,p);
 }
 
 
@@ -534,20 +426,16 @@ void Display::showHeader(CDC *pDC, const string &header)
 }
 
 
-int Display::calcFontSize(GuiOptions::BoardSize boardSize)
+int Display::calcSquareSize(GuiOptions::BoardSize boardSize)
 {
-   HDC pDC = GetDC(0);
-   int fontSize;
-   int xDPI = GetDeviceCaps(pDC,LOGPIXELSX);
-   switch (guiOptions->getBoardSize()) {
-      case GuiOptions::Small: fontSize = (240*96)/xDPI; break;
-      case GuiOptions::Medium: fontSize = (360*96)/xDPI; break;
-      case GuiOptions::Large: fontSize = (480*96)/xDPI; break;
-      case GuiOptions::XLarge: fontSize = (600*96)/xDPI; break;
-      case GuiOptions::XXLarge: fontSize = (900*96)/xDPI; break;
+   switch (boardSize) {
+      case GuiOptions::Small: return 32;
+      case GuiOptions::Medium: return 48;
+      case GuiOptions::Large: return 72;
+      case GuiOptions::XLarge: return 96;
+      case GuiOptions::XXLarge: return 144;
    }
-   ReleaseDC(0,pDC);
-   return fontSize;
+   return 48;
 }
 
 

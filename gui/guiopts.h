@@ -38,6 +38,7 @@ class GuiOptions
       {
          BOOL show_coordinates;
          string pieceFontName;
+         string pieceSet;
          BoardSize board_size;
          COLORREF lightSquareColor, darkSquareColor;
          BOOL forceMono;
@@ -138,6 +139,15 @@ class GuiOptions
 
       void setPieceFontName(LPCSTR font) {
          appr.pieceFontName = font;
+      }
+
+      LPCSTR getPieceSet() const
+      {
+         return appr.pieceSet.c_str();
+      }
+
+      void setPieceSet(LPCSTR set) {
+         appr.pieceSet = set;
       }
 
       void setBoardSize(BoardSize size) {
