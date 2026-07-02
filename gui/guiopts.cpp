@@ -8,6 +8,11 @@
 static const char *src_names[] =
 { "Time", "Incremental", "Tournament", "Depth", 0};
 
+// Neutral default board colors (COLORREF is 0x00bbggrr):
+//   light = RGB(232,227,217), dark = RGB(150,140,128)
+static constexpr COLORREF DEFAULT_LIGHT_SQUARE_COLOR = 0x00d9e3e8;
+static constexpr COLORREF DEFAULT_DARK_SQUARE_COLOR = 0x00808c96;
+
 void GuiOptions::load_src_limits()
 {
 
@@ -168,7 +173,7 @@ app(guiApp)
 
    opt_str = app->GetProfileString("Appearance","Show Coordinates","True");
    appr.show_coordinates = opt_str == "True";
-   appr.pieceSet = app->GetProfileString("Appearance","Piece Set","rhosgfx");
+   appr.pieceSet = app->GetProfileString("Appearance","Piece Set","celtic");
 
    appX = app->GetProfileInt("Location","x",50);
    appY = app->GetProfileInt("Location","y",50);
@@ -185,8 +190,8 @@ app(guiApp)
       appr.board_size = XLarge;
    else if (opt_str == "XXLarge")
       appr.board_size = XXLarge;
-   appr.lightSquareColor  = (COLORREF)app->GetProfileInt("Appearance","Light Square Color",0x80ffff);
-   appr.darkSquareColor = (COLORREF)app->GetProfileInt("Appearance","Dark Square Color",0x408040);
+   appr.lightSquareColor  = (COLORREF)app->GetProfileInt("Appearance","Light Square Color",DEFAULT_LIGHT_SQUARE_COLOR);
+   appr.darkSquareColor = (COLORREF)app->GetProfileInt("Appearance","Dark Square Color",DEFAULT_DARK_SQUARE_COLOR);
 }
 
 
