@@ -365,6 +365,12 @@ void ArasanGuiView::OnLButtonUp(UINT nFlags, CPoint point)
 {
    if (!disp)
       return;
+   if (start_square == InvalidSquare) {
+      // No valid piece was grabbed on button-down (e.g. it is not the
+      // user's move, or an empty square was clicked). Ignore the release.
+      CView::OnLButtonUp(nFlags, point);
+      return;
+   }
    Square dest = disp->mouseLocation(point);
    TRACE("dest square = %d, users move=%d\n",dest,usersMove());
    const Board& board = GetDocument()->getCurrentBoard();
