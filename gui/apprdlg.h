@@ -16,23 +16,17 @@ class AppearanceDialog : public CDialog
    // Construction
    public:
                                                   // standard constructor
-      AppearanceDialog(CWnd* pParent,LPCSTR currentFont);
+      AppearanceDialog(CWnd* pParent,LPCSTR currentSet);
 
-      const CString &getFontName() {
-         return m_FontSelection;
-      }
-
-      const int getFontType() {
-         return m_fontType;
+      const CString &getPieceSet() {
+         return m_pieceSet;
       }
 
       // Dialog Data
       //{{AFX_DATA(AppearanceDialog)
       enum { IDD = IDD_APPEARANCE };
-      CButton  m_FontPreviewText;
-      CComboBox   m_ComboBox;
-      CString  m_FontSelection;
-      CString  m_FontPreviewValue;
+      CComboBox   m_ComboBox;          // reuses IDC_FONT_COMBO (now a piece-set list)
+      CString  m_pieceSet;
       int      m_boardSize;
       BOOL  m_Coordinates;
       //}}AFX_DATA
@@ -51,14 +45,9 @@ class AppearanceDialog : public CDialog
       // Generated message map functions
       //{{AFX_MSG(AppearanceDialog)
       virtual BOOL OnInitDialog();
-      afx_msg void OnSelchangeFontCombo();
-      afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
       afx_msg void OnHelp();
       //}}AFX_MSG
       DECLARE_MESSAGE_MAP()
-
-         int m_fontType;
-      CFont currentFont;
 };
 
 //{{AFX_INSERT_LOCATION}}

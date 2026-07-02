@@ -1260,15 +1260,15 @@ void ArasanGuiView::OnDropFiles(HDROP hDropInfo)
 
 void ArasanGuiView::OnOptionsAppearance()
 {
-   CString font = guiOptions->getPieceFontName();
-   AppearanceDialog dlg(this,(LPCSTR)font);
+   CString set = guiOptions->getPieceSet();
+   AppearanceDialog dlg(this,(LPCSTR)set);
    if (dlg.DoModal() == IDOK) {
       guiOptions->setShowCoordinates(dlg.m_Coordinates);
       guiOptions->setBoardSize((GuiOptions::BoardSize)dlg.m_boardSize);
-      if (font.Compare(dlg.m_FontSelection)!=0) {
-         guiOptions->setPieceFontName(dlg.m_FontSelection);
+      if (set.Compare(dlg.m_pieceSet)!=0) {
+         guiOptions->setPieceSet(dlg.m_pieceSet);
          CDC *pDC = GetDC();
-         disp->setPieceFont(pDC,dlg.m_FontSelection,guiOptions->getBoardSize());
+         disp->setPieceSet(pDC,dlg.m_pieceSet,guiOptions->getBoardSize());
          ReleaseDC(pDC);
       }
       PostMessage(WM_COMMAND,ID_RESIZE,0);
