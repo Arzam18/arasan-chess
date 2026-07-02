@@ -24,7 +24,6 @@ BoardColorDialog::BoardColorDialog(CWnd* pParent /*=NULL*/)
 : CDialog(BoardColorDialog::IDD, pParent)
 {
    //{{AFX_DATA_INIT(BoardColorDialog)
-   m_forceMono = FALSE;
    //}}AFX_DATA_INIT
 }
 
@@ -33,12 +32,10 @@ void BoardColorDialog::DoDataExchange(CDataExchange* pDX)
 {
    CDialog::DoDataExchange(pDX);
    //{{AFX_DATA_MAP(BoardColorDialog)
-   DDX_Control(pDX, IDC_FORCE_MONO, m_forceMonoCheck);
    DDX_Control(pDX, IDC_CHOOSELIGHT, m_chooseLight);
    DDX_Control(pDX, IDC_CHOOSEDARK, m_chooseDark);
    DDX_Control(pDX, IDC_LIGHTCOLOR, m_lightColor);
    DDX_Control(pDX, IDC_DARKCOLOR, m_darkColor);
-   DDX_Check(pDX, IDC_FORCE_MONO, m_forceMono);
    //}}AFX_DATA_MAP
 }
 
@@ -48,7 +45,6 @@ BEGIN_MESSAGE_MAP(BoardColorDialog, CDialog)
 ON_BN_CLICKED(IDC_CHOOSEDARK, OnChoosedark)
 ON_BN_CLICKED(IDC_CHOOSELIGHT, OnChooselight)
 ON_WM_CREATE()
-ON_BN_CLICKED(IDC_FORCE_MONO, OnForceMono)
 ON_BN_CLICKED(ID_HELP, OnHelp)
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -85,24 +81,12 @@ void BoardColorDialog::OnChooselight()
 }
 
 
-void BoardColorDialog::OnForceMono()
-{
-   UpdateData();
-   m_chooseDark.EnableWindow(!m_forceMono);
-   m_chooseLight.EnableWindow(!m_forceMono);
-}
-
-
 BOOL BoardColorDialog::OnInitDialog()
 {
    CDialog::OnInitDialog();
    // set the color of the buttons that show the current colors:
    m_lightColor.setColor(guiOptions->getLightSquareColor());
    m_darkColor.setColor(guiOptions->getDarkSquareColor());
-   m_forceMono = guiOptions->getForceMono();
-   m_forceMonoCheck.SetCheck(m_forceMono);
-   m_chooseDark.EnableWindow(!m_forceMono);
-   m_chooseLight.EnableWindow(!m_forceMono);
 
    return TRUE;                                   // return TRUE unless you set the focus to a control
    // EXCEPTION: OCX Property Pages should return FALSE

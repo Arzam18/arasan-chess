@@ -91,8 +91,6 @@ void GuiOptions::save()
    app->WriteProfileInt("Location", "y",appY);
    app->WriteProfileInt("Window State", "Flags", flags);
    app->WriteProfileInt("Window State", "ShowCmd", showCmd);
-   app->WriteProfileString("Appearance","Force Mono",appr.forceMono ?
-      "True" : "False");
    switch (appr.board_size) {
       case Small:
          app->WriteProfileString("Appearance","Board Size","Small"); break;
@@ -105,7 +103,6 @@ void GuiOptions::save()
       case XXLarge:
          app->WriteProfileString("Appearance","Board Size","XXLarge"); break;
    }
-   app->WriteProfileString("Appearance","Font",appr.pieceFontName.c_str());
    app->WriteProfileString("Appearance","Piece Set",appr.pieceSet.c_str());
    app->WriteProfileString("Appearance","Show Coordinates",boolString(appr.show_coordinates));
    app->WriteProfileInt("Appearance","Light Square Color",appr.lightSquareColor);
@@ -168,12 +165,9 @@ app(guiApp)
    opt_str = app->GetProfileString("Preferences","Save Games","False");
    gprefs.saveGames = opt_str == "True";
    gprefs.gamePathname = app->GetProfileString("Preferences","Game Pathname","");
-   opt_str = app->GetProfileString("Appearance","Force Mono","False");
-   appr.forceMono = (opt_str == "True") ? TRUE : FALSE;
 
    opt_str = app->GetProfileString("Appearance","Show Coordinates","True");
    appr.show_coordinates = opt_str == "True";
-   appr.pieceFontName = app->GetProfileString("Appearance","Font","Chess Berlin");
    appr.pieceSet = app->GetProfileString("Appearance","Piece Set","rhosgfx");
 
    appX = app->GetProfileInt("Location","x",50);

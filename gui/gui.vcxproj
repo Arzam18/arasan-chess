@@ -264,7 +264,6 @@
     <ClCompile Include="colordlg.cpp" />
     <ClCompile Include="disphint.cpp" />
     <ClCompile Include="display.cpp" />
-    <ClCompile Include="drawutil.cpp" />
     <ClCompile Include="EngineCo.cpp" />
     <ClCompile Include="guiDoc.cpp" />
     <ClCompile Include="guiopts.cpp" />
@@ -472,7 +471,6 @@
     <ClInclude Include="colordlg.h" />
     <ClInclude Include="disphint.h" />
     <ClInclude Include="display.h" />
-    <ClInclude Include="drawutil.h" />
     <ClInclude Include="engineco.h" />
     <ClInclude Include="guiDoc.h" />
     <ClInclude Include="guiopts.h" />

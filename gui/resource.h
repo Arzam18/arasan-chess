@@ -47,9 +47,7 @@
 #define IDC_GAMELIST                    1005
 #define IDC_GAME_LIST                   1006
 #define IDC_BEEP_AFTER_MOVE_CHECK       1007
-#define IDC_FORCE_MONO                  1008
 #define IDC_FONT_COMBO                  1009
-#define IDC_FONT_PREVIEW                1010
 #define IDC_BEEP_ON_ERROR_CHECK         1011
 #define IDC_BOARD_SIZE_COMBO            1012
 #define IDC_PONDER_CHECK                1013
@@ -109,7 +107,6 @@
 #define ID_GAME_ROTATE_BOARD            32814
 #define ID_GAME_SHOW_MOVES              32815
 #define ID_PLAYWHITE                    32816
-#define ID_OPTIONS_CHESSFONT            32817
 #define ID_HELP_SEARCH                  32818
 #define ID_OPTIONS_APPEARANCE           32819
 #define ID_BOARD_COLORS                 32820

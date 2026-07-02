@@ -434,7 +434,6 @@ BEGIN
     CONTROL         "",IDC_DARKCOLOR,"Button",BS_OWNERDRAW | WS_DISABLED | WS_TABSTOP,87,31,45,16
     PUSHBUTTON      "Choose Color..",IDC_CHOOSELIGHT,140,12,54,14
     PUSHBUTTON      "Choose Color..",IDC_CHOOSEDARK,140,32,54,14
-    CONTROL         "Black && white display",IDC_FORCE_MONO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,38,53,82,10
     PUSHBUTTON      "Help",ID_HELP,146,95,50,14
 END
 
@@ -658,7 +657,6 @@ END
 STRINGTABLE
 BEGIN
     ID_PLAYWHITE            "Change side computer plays"
-    ID_OPTIONS_CHESSFONT    "Select the piece font"
     ID_HELP_SEARCH          "Shows help index"
     ID_OPTIONS_APPEARANCE   "Change appearance of the chessboard."
     ID_BOARD_COLORS         "Set the colors of the chessboard"

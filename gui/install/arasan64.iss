@@ -35,12 +35,7 @@ Name: desktopicon\user; Description: "For the current user only"; GroupDescripti
 Source: "gui\x64\release\arasan-64.exe"; DestDir: "{app}"; Components: GUI
 Source: "gui\res\arasan.ico"; DestDir: "{app}"; Components: GUI
 Source: "gui\help\arasan.chm"; DestDir: "{app}"; Components: GUI
-Source: "gui\fonts\alpha.ttf"; DestDir: "{commonfonts}"; Components: GUI; FontInstall: "Chess Alpha"; Flags: onlyifdoesntexist uninsneveruninstall
-Source: "gui\fonts\Berlin.ttf"; DestDir: "{commonfonts}"; Components: GUI; FontInstall: "Chess Berlin"; Flags: onlyifdoesntexist uninsneveruninstall
-Source: "gui\fonts\merifont.ttf"; DestDir: "{commonfonts}"; Components: GUI; FontInstall: "Chess Merida"; Flags: onlyifdoesntexist uninsneveruninstall
-Source: "gui\fonts\mayafont.ttf"; DestDir: "{commonfonts}"; Components: GUI; FontInstall: "Chess Maya"; Flags: onlyifdoesntexist uninsneveruninstall
-Source: "gui\fonts\chessmar.ttf"; DestDir: "{commonfonts}"; Components: GUI; FontInstall: "Chess Marroquin"; Flags: onlyifdoesntexist uninsneveruninstall
-Source: "gui\fonts\tt_usual.ttf"; DestDir: "{commonfonts}"; Components: GUI; FontInstall: "Chess Usual"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "gui\pieces\*"; DestDir: "{app}\pieces"; Flags: recursesubdirs createallsubdirs; Components: GUI
 Source: "book\chess-openings\*"; DestDir: "{app}\chess-openings"; Components: GUI
 Source: "win64\release\arasanx-64.exe"; DestDir: "{app}"; Components: engine
 Source: "network\arasanv8-20260622.nnue"; DestDir: "{app}"; Components: engine

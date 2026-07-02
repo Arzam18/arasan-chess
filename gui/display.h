@@ -60,20 +60,10 @@ class Display
       // Load and rasterize the named SVG piece set at the given board size.
       void setPieceSet(CDC *pDC, LPCSTR setName, GuiOptions::BoardSize boardSize);
 
-      // Inert: the chess piece font has been replaced by SVG pieces. Retained
-      // so the Appearance font dialog still links; removed in Phase 3.
-      void setPieceFont(CDC *pDC, LPCSTR fontName, GuiOptions::BoardSize boardSize);
-
       static void calcWindowSize(GuiOptions::BoardSize boardSize, int &x, int &y);
 
       // Square edge length in pixels for a given board size.
       static int calcSquareSize(GuiOptions::BoardSize boardSize);
-
-      // Mono display support was dropped; always false. Retained for Phase 3.
-      int is_mono() const
-      {
-         return 0;
-      }
 
       void getSquareRect(Square sq,BOOL turned,CRect &loc);
 

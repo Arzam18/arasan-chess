@@ -20,12 +20,10 @@ class BoardColorDialog : public CDialog
       // Dialog Data
       //{{AFX_DATA(BoardColorDialog)
       enum { IDD = IDD_COLORS };
-      CButton  m_forceMonoCheck;
       CButton  m_chooseLight;
       CButton  m_chooseDark;
       CColorButton   m_lightColor;
       CColorButton   m_darkColor;
-      BOOL  m_forceMono;
       //}}AFX_DATA
 
       COLORREF getLightColor() const
@@ -36,11 +34,6 @@ class BoardColorDialog : public CDialog
       COLORREF getDarkColor() const
       {
          return m_darkColor.getColor();
-      }
-
-      BOOL getForceMono() const
-      {
-         return m_forceMono;
       }
 
       // Overrides
@@ -59,7 +52,6 @@ class BoardColorDialog : public CDialog
       afx_msg void OnChoosedark();
       afx_msg void OnChooselight();
       afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-      afx_msg void OnForceMono();
       virtual BOOL OnInitDialog();
       afx_msg void OnHelp();
       //}}AFX_MSG

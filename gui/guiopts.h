@@ -37,11 +37,9 @@ class GuiOptions
       struct Appearance
       {
          BOOL show_coordinates;
-         string pieceFontName;
          string pieceSet;
          BoardSize board_size;
          COLORREF lightSquareColor, darkSquareColor;
-         BOOL forceMono;
       };
 
       GuiOptions(CWinApp *);
@@ -132,15 +130,6 @@ class GuiOptions
 
       void get_app_location(int &x, int &y);
 
-      LPCSTR getPieceFontName() const
-      {
-         return appr.pieceFontName.c_str();
-      }
-
-      void setPieceFontName(LPCSTR font) {
-         appr.pieceFontName = font;
-      }
-
       LPCSTR getPieceSet() const
       {
          return appr.pieceSet.c_str();
@@ -175,14 +164,6 @@ class GuiOptions
 
       const void setDarkSquareColor(COLORREF color) {
          appr.darkSquareColor = color;
-      }
-
-      const BOOL getForceMono() {
-         return appr.forceMono;
-      }
-
-      void setForceMono(BOOL flag) {
-         appr.forceMono = flag;
       }
 
       UINT getFlags() const {

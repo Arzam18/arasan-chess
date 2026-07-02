@@ -104,13 +104,6 @@ void Display::getRect( DisplayRegion region,CRect &rect)
 }
 
 
-void Display::setPieceFont(CDC *pDC, LPCSTR fontName, GuiOptions::BoardSize boardSize)
-{
-   // Inert: SVG pieces have replaced the chess font. Retained so the
-   // Appearance font dialog still links; removed in Phase 3.
-}
-
-
 void Display::setPieceSet(CDC *pDC, LPCSTR setName, GuiOptions::BoardSize boardSize)
 {
    int sz = calcSquareSize(boardSize);

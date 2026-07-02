@@ -1284,10 +1284,7 @@ void ArasanGuiView::OnUpdateOptionsAppearance(CCmdUI* pCmdUI)
 
 void ArasanGuiView::OnUpdateBoardColors(CCmdUI* pCmdUI)
 {
-    if (disp == NULL)
-        pCmdUI->Enable(FALSE);
-    else
-        pCmdUI->Enable(!disp->is_mono());
+    pCmdUI->Enable(disp != NULL);
 }
 
 
@@ -1297,7 +1294,6 @@ void ArasanGuiView::OnBoardColors()
    if (dlg.DoModal() == IDOK) {
       guiOptions->setLightSquareColor(dlg.getLightColor());
       guiOptions->setDarkSquareColor(dlg.getDarkColor());
-      guiOptions->setForceMono(dlg.getForceMono());
       Invalidate();
    }
 }
