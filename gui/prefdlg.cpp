@@ -22,7 +22,6 @@ PreferenceDialog::PreferenceDialog(CWnd* pParent /*=NULL*/)
 {
    m_AutoSizeHashTable = guiOptions->auto_size_hash_table();
    m_HashSize = guiOptions->hash_table_size();
-   m_HashSizeSpin.SetRange(1, max_hash_size());
    m_Ponder = guiOptions->think_when_idle();
    m_BeepOnError = guiOptions->beep_on_error();
    m_BeepAfterMove = guiOptions->beep_after_move();
