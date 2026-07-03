@@ -285,9 +285,9 @@ BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 232
+        RIGHTMARGIN, 258
         TOPMARGIN, 7
-        BOTTOMMARGIN, 172
+        BOTTOMMARGIN, 118
     END
 
     IDD_COLORS, DIALOG
@@ -406,19 +406,15 @@ BEGIN
     PUSHBUTTON      "Help",ID_HELP,138,42,50,14
 END
 
-IDD_ABOUTBOX DIALOGEX 0, 0, 239, 179
+IDD_ABOUTBOX DIALOGEX 0, 0, 265, 125
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About Arasan"
 FONT 9, "Arial", 0, 0, 0x0
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,182,7,50,14
+    DEFPUSHBUTTON   "OK",IDOK,208,7,50,14
     CTEXT           "Arasan Chess Windows GUI version 25.4\nby Jon Dart",IDC_STATIC,32,24,175,16
-    LTEXT           "Copyright 1994-2025 by Jon Dart. All Rights Reserved. Chess fonts copyright Eric Bentzen and Armando H. Marroquin.",IDC_STATIC,34,47,173,42
-    LTEXT           "See the LICENSE file in the installation folder for licensing details.",IDC_STATIC,34,72,178,24
-    LTEXT           "This program may be freely copied and distributed, under the following conditions:",IDC_STATIC,34,97,178,18
-    LTEXT           "1. It is distributed unmodified.",IDC_STATIC,34,117,162,16
-    LTEXT           "2. No charge is made for it other than a nominal fee for copying or media.",IDC_STATIC,34,129,176,18
-    CONTROL         "http://www.arasanchess.org",IDC_HYPERLINK,"Button",BS_OWNERDRAW | WS_TABSTOP,35,155,176,10
+    LTEXT           "Copyright 1994-2026 by Jon Dart. All Rights Reserved. See the LICENSE file in the installation folder for license details.",IDC_STATIC,34,47,173,32
+    CONTROL         "http://www.arasanchess.org",IDC_HYPERLINK,"Button",BS_OWNERDRAW | WS_TABSTOP,35,108,176,10
 END
 
 IDD_COLORS DIALOG 0, 0, 226, 124
@@ -470,6 +466,11 @@ BEGIN
 END
 
 IDD_PREFERENCES AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_ABOUTBOX AFX_DIALOG_LAYOUT
 BEGIN
     0
 END
