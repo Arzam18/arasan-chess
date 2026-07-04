@@ -26,7 +26,9 @@ extern "C" {
 }
 #endif
 
+#ifndef _WIN32
 static constexpr size_t LINUX_STACK_SIZE = 4 * 1024 * 1024;
+#endif
 
 using namespace std::placeholders;
 
@@ -110,6 +112,7 @@ static struct SelfPlayOptions {
     unsigned semiRandomPerGame = 14;
     unsigned multipv_limit = 8;
     score_t multiPVMargin = static_cast<score_t>(0.45 * Scoring::PAWN_VALUE);
+    float whiteMarginAdjust = 0.91;
     bool skipNonQuiet = true;
     bool nonQuietSearchTest = false;
     score_t nonQuietSearchMargin = static_cast<score_t>(Scoring::PAWN_VALUE);
@@ -324,6 +327,10 @@ static void semiRandomMove(const Board &board, SelfPlayOptions::RandomizeType ty
         // results are ranked in descending order by score
         int maxScore = stats.multi_pvs[0].display_value;
         MoveResult candidates[MAX_MULTIPV];
+        score_t margin = sp_options.multiPVMargin;
+        if (board.sideToMove() == White) {
+            margin = static_cast<score_t>(sp_options.whiteMarginAdjust * margin);
+        }
         for (size_t i = 0; i < stats.multipv_count; ++i) {
             const Statistics::MultiPVEntry &entry = stats.multi_pvs[i];
             if (!IsNull(entry.best) && (maxScore - entry.display_value) <= sp_options.multiPVMargin) {
