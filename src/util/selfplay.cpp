@@ -111,7 +111,7 @@ static struct SelfPlayOptions {
     unsigned semiRandomizeInterval = 1;
     unsigned semiRandomPerGame = 14;
     unsigned multipv_limit = 8;
-    score_t multiPVMargin = static_cast<score_t>(0.4 * Scoring::PAWN_VALUE);
+    score_t multiPVMargin = static_cast<score_t>(0.42 * Scoring::PAWN_VALUE);
     float whiteMarginAdjust = 0.95;
     bool skipNonQuiet = true;
     bool nonQuietSearchTest = false;
