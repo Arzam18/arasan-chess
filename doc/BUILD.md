@@ -113,15 +113,9 @@ Program execution for PGO runs in the "profile" subdirectory, and
 -a is passed to the program, allowing options such as tablebase
 use to be set via an arasan.rc file in that directory, if desired.
 
-Defining NUMA in the Makefile will build a version that has support
-for NUMA (Non-Uniform Memory Access) machines. NUMA support relies
-on the hwloc library version 2.0 or higher. Note: you must have a
-compatible hwloc library in the library search path at runtime.
-
 The Arasan engine binary is named "arasanx-64," followed
 by the instruction set selected at build time (if specified), so for example:
-"arasanx-64-avx2-bmi2."  "-numa" is added for a NUMA
-build.
+"arasanx-64-avx2-bmi2."
 
 "make release" will build the release tarball and place it in the
 release subdirectory. This target uses a Python tool git-archive-all
