@@ -174,16 +174,6 @@ while the debug objects and binaries are put into "\<target>\Debug".
 The default target is 64-bit Windows. For a 32-bit build, edit the
 Makefile to select TARGET=win32 and run the same build commands.
 
-## Windows XP compatibility
-
-To make a Windows XP-compatible build, edit the Makefile to set PLATFORM=XP.
-This requires installation and use of the build tools version 141_xp, including the
-Windows SDK version 7.1A. This is available as part of a Visual Studio 2017
-install, or by selecting the approprate build tools as part of a later
-Visual Studio install (but not Visual Studio 2026, which has dropped support).
-Note I no longer have a functioning XP machine, and so compatibility of current
-builds of Arasan is not tested.
-
 ## Building the engine with Visual Studio
 
 The Windows source distribution includes Visual Studio solution
@@ -204,6 +194,22 @@ Studio installer can add this, but it is not installed by default.
 
 The Arasan GUI installer was built with InnoSetup: see the gui/install
 directory for further details.
+
+## Windows XP compatibility
+
+To make a Windows XP-compatible build, edit the Makefile to set PLATFORM=XP.
+This requires installation and use of the build tools version 141_xp, including the
+Windows SDK version 7.1A. This is available as part of a Visual Studio 2017
+install, or by selecting the approprate build tools as part of a later
+Visual Studio install (but not Visual Studio 2026, which has dropped support).
+
+Alternatively, build using the VS Studio project files, which enforce both the
+XP subsystem and toolchain.
+
+Note that I no longer have a functioning XP machine, and so compatibility of current
+builds of Arasan is not tested. This support is likely to be removed from Arasan in
+future, as Microsoft no longer supports Windows versions < 10, nor does it support
+the corresponding build tools.
 
 ## Cygwin/MSYS
 
