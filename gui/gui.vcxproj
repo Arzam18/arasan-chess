@@ -74,7 +74,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\um\x86</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86)</LibraryPath>
     <TargetName>arasan-32</TargetName>
     <OutDir>$(SolutionDir)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\$(Platform)\$(Configuration)\</IntDir>
@@ -82,7 +82,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\um\x86</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86)</LibraryPath>
     <TargetName>arasan-32</TargetName>
     <OutDir>$(SolutionDir)\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\$(Platform)\$(Configuration)\</IntDir>
@@ -102,7 +102,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;NTDDI_VERSION=0x05010300;_WIN32_WINNT=0x0501;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
@@ -121,7 +121,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;NTDDI_VERSION=0x05010300;_WIN32_WINNT=0x0501;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -154,7 +154,7 @@
     </Link>
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;_64BIT;SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;_64BIT;SIMD;SSE2;WIN32;_DEBUG;_WINDOWS;NOMINMAX;NTDDI_VERSION=0x05010300;_WIN32_WINNT=0x0501;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalIncludeDirectories>..\src;..\src\nnue;lunasvg\include</AdditionalIncludeDirectories>
@@ -171,7 +171,7 @@
     </Link>
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;_64BIT;SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LUNASVG_BUILD_STATIC;PLUTOVG_BUILD_STATIC;_64BIT;SIMD;SSE2;WIN32;NDEBUG;_WINDOWS;NOMINMAX;NTDDI_VERSION=0x05010300;_WIN32_WINNT=0x0501;_CRT_SECURE_NO_DEPRECATE;USE_INTRINSICS;_64BIT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\src;..\src\nnue;lunasvg\include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
