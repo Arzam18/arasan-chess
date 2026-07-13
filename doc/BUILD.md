@@ -33,9 +33,8 @@ NMAKE (Makefile.win) and one for GNU make (Makefile).
 
 Syzygy tablebase support is enabled by default.
 
-Syzygy support, NNUE support,and some of the Python scripts in the tools
-subdirectory rely on imported submodules. So if building Arasan from a
-git respository, issue the following command within your git directory
+The Arasan repository relies on several imported submodules. So if building
+Arasan from a git respository, issue the following command within your git directory
 to pull these dependencies into your your source tree:
 
 `git submodule update --init --recursive`
