@@ -5,11 +5,11 @@ building the chess program (arasanx), and also source for the
 following other console programs:
 
 - makebook - builds binary opening book files from text (PGN) files
-- makeeco - builds ecodata.cpp from from "eco" text file
 - ecococder - adds ECO codes to a PGN file
 - playchess - filters PGN games, removing those where end eval differs from result (and short games)
 - selfplay - generates positions for NNUE tuning
-- post_process_nn - converts quantised network file from bullet to Arasan format
+- sortpgn - utility to sort PGN files by date and round
+- blundercheck - utility to blunder-check PGN files
 
 Following is a sketch of the Arasan source directory tree:
 
@@ -189,8 +189,8 @@ subdirectory. (The command-line Makefile does not build the GUI). You
 will need a version of Visual Studio that includes
 the required MFC libraries. The Community Edition should work.
 By default the GUI solution file produces a Windows XP-compatible build,
-and so it requires the Windows SDK 7.1A to be installed. The Visual
-Studio installer can add this, but it is not installed by default.
+and so it requires the Windows SDK 7.1A to be installed (see the next
+section for further details).
 
 The Arasan GUI installer was built with InnoSetup: see the gui/install
 directory for further details.
