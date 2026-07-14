@@ -67,8 +67,8 @@ def fetch_games(client, username, since_ms, until_ms):
         until=until_ms,
         moves=True,
         tags=True,
-        clocks=True,
-        evals=True,
+        clocks=False,
+        evals=False,
         opening=True,
     )
 
@@ -129,7 +129,10 @@ def main():
             if opp_elo < args.min_elo:
                 continue
 
-            print(game, end="\n\n")
+            exporter = chess.pgn.StringExporter(
+                headers=True, variations=False, comments=False
+            )
+            print(game.accept(exporter), end="\n\n")
 
     print(f"Done. Processed {len(handles)} player(s).", file=sys.stderr)
 
