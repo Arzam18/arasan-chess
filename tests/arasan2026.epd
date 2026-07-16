@@ -22,7 +22,7 @@ r1q2rk1/ppnbbpp1/n4P1p/4P3/3p4/2N1B1PP/PP4BK/R2Q1R2 w - - bm Bxh6; id "arasan202
 8/6p1/P1b1pp2/2p1p3/1k4P1/3PP3/1PK5/5B2 w - - bm Bg2; id "arasan2026.22"; c0 "Vincent Lejeune #36";
 r5n1/p1p1q2k/4b2p/3pB3/3PP1pP/8/PPPQ2P1/5RK1 w - - bm Qf4; id "arasan2026.23"; c0 "Shulman-Marciano, Ubeda 1997";
 2b2rk1/r3q1pp/1nn1p3/3pP1NP/p1pP2Q1/2P1N3/1P1KBP2/R5R1 w - - bm Nxh7; id "arasan2026.24"; c0 "Vincent-Sebagh, 66th corr ch-FRA 2001";
-rnb3k1/p3qpr1/2p1p3/2NP3p/1pP3p1/3BQ3/P4PP1/4RRK1 w - - bm Qd4; id "arasan2026.25"; c0 "Papenin-Karacsony, CS University Craiova - 10 Years ICCF 2010";
+r4bk1/5pp1/2q2n2/2n1pPN1/2P5/4BP2/2B4Q/6RK w - - bm Kg2; id "arasan2026.25"; c0 "bot1e - ArasanX, lichess.org 2026";
 r3r1k1/p3bppp/q1b2n2/5Q2/1p1B4/1BNR4/PPP3PP/2K2R2 w - - bm Rg3; id "arasan2026.26"; c0 "Tukmakov-Minenkov, Soviet Union 1969";
 2bq1rk1/rpb2p2/2p1p1p1/p1N3Np/P2P1P1P/1Q2R1P1/1P3P2/3R2K1 w - - bm f5; id "arasan2026.27"; c0 "Soloman-MarioDeMonti, Tuesday 19 April Rapid Engine Tour 15+5, Infinity Chess 2016";
 3q1r1k/2r2pp1/p6p/1pbppP1N/3pP1PP/3P1Q2/PPP4R/5RK1 w - - bm g5; id "arasan2026.28"; c0 "Pinkovetsky-Fischer, WC/27 final ICCF 2011";
