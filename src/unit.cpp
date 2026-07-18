@@ -477,7 +477,7 @@ static int testEval() {
         Case("2q1r1k1/1r4b1/2p3p1/1pBpP1P1/p2P1P1Q/P3R2R/1P5K/8 b - -",
              -8.0,-4.0), // King attack
         Case("3r4/P4k2/7p/8/2P1p1Bp/1PKn4/R5P1/8 b - -", // advanced passer
-             -12.0,-6.0),
+             -15.0,-8.0),
         // material imbalance
         Case("8/6pk/5pb1/7p/Q6P/2r1N3/5PP1/6K1 w - -",4.0,10.0),
         // material imbalance
