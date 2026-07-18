@@ -25,7 +25,7 @@ r5n1/p1p1q2k/4b2p/3pB3/3PP1pP/8/PPPQ2P1/5RK1 w - - bm Qf4; id "arasan2026.23"; c
 r4bk1/5pp1/2q2n2/2n1pPN1/2P5/4BP2/2B4Q/6RK w - - bm Kg2; id "arasan2026.25"; c0 "bot1e - ArasanX, lichess.org 2026";
 r3r1k1/p3bppp/q1b2n2/5Q2/1p1B4/1BNR4/PPP3PP/2K2R2 w - - bm Rg3; id "arasan2026.26"; c0 "Tukmakov-Minenkov, Soviet Union 1969";
 2bq1rk1/rpb2p2/2p1p1p1/p1N3Np/P2P1P1P/1Q2R1P1/1P3P2/3R2K1 w - - bm f5; id "arasan2026.27"; c0 "Soloman-MarioDeMonti, Tuesday 19 April Rapid Engine Tour 15+5, Infinity Chess 2016";
-3q1r1k/2r2pp1/p6p/1pbppP1N/3pP1PP/3P1Q2/PPP4R/5RK1 w - - bm g5; id "arasan2026.28"; c0 "Pinkovetsky-Fischer, WC/27 final ICCF 2011";
+8/8/2p5/2k3p1/7p/1p3K2/pN6/3R4 w - - bm Ke4; id "arasan2026.28"; c0 "RustBot2003 - ArasanX, lichess.org 2026 (analysis)";
 1q6/6k1/5Np1/1r4Pp/2p4P/2Nrb3/PP6/KR5Q b - - bm Bd4; id "arasan2026.29"; c0 "De Carbonnel-Berliner, 5th World CC Ch Final 1967";
 b2rk3/r4p2/p3p3/P3Q1Np/2Pp3P/8/6P1/6K1 w - - bm Qh8+; id "arasan2026.30"; c0 "Grischuk-Svidler, WCh Mexico City (6) 2007";
 2kr1b1r/1pp1ppp1/p7/q2P3n/2BB1pb1/2NQ4/P1P1N3/1R3RK1 w - - bm Rxb7; id "arasan2026.31"; c0 "Critter 1.6a 4CPU-Rybka 4.1 4CPU, Scandinavian Thematic 2013 (G. Banks)";
