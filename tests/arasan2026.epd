@@ -61,8 +61,8 @@ r1b2rk1/pp1p2pR/8/1pb2p2/5N2/7Q/qPPB1PPP/6K1 w - - bm g3; id "arasan2026.59"; c0
 2k2b1r/p4p2/4pP2/2pbP3/1pp1NB1P/6P1/qP3PB1/3RR1K1 w - - bm Rxd5; id "arasan2026.61"; c0 "Lc0 0.22.0 11260-Laser 1.7, FGRL 16 core 2019";
 3r2k1/pb3Np1/4pq1p/2pp1n2/3P4/1PQ5/P4PPP/R2R2K1 b - - bm Nxd4; id "arasan2026.62"; c0 "Arasan-Crafty, ICC 2009";
 2kr1r2/ppq1b1p1/2n5/2PpPb1N/QP1B1pp1/2P5/P2N1P1P/R4RK1 b - - bm Rh8; id "arasan2026.63"; c0 "Arasan-Q9550 (Rybka), ICC 2009";
-r1r2k2/pp2bpp1/2bppn1p/6B1/2qNPPPP/2N5/PPPQ4/1K1RR3 w - - bm f5; id "arasan2026.64"; c0 "Vasiukov-Van Wely, Aeroflot Open Moscow 2002";
-8/8/Q4p1k/6p1/4pNqn/PP2P1P1/3r1P2/2R3K1 b - - bm gxf4; id "arasan2026.65"; c0 "Arasan-Wasp, FICS 2020 (analysis)";
+3r2k1/2p1qppp/r7/1p1PP3/p3P3/nnR2N2/4BP1P/3Q2RK w - - bm d6; id "arasan2026.64"; c0 "TomomBot - Mr-Chess-Berserk, lichess.org 2024";
+r3r1k1/1b1n1ppp/1q2p1n1/1pp1P1PQ/4BBN1/P1pP2P1/P4P2/R3R1K1 w - - bm Nf6+; id "arasan2026.65"; c0 "Acha-Sorensen, Martinez Acosta mem-A corr Argentina 1995";
 3qb1k1/5rb1/r3p1Np/1n1pP2P/p1pB1PQ1/2P5/R1B4K/6R1 w - - bm Bc5; id "arasan2026.66"; c0 "Maximus-Akhtar, 90'+15, IC Freestyle Battle 2014";
 3q1k2/p4pb1/3Pp3/p3P3/r6p/2QB3P/3B1P2/6K1 w - - bm Bb5; id "arasan2026.67"; c0 "MingLi (Rybka 3 Dyanmic)-Ultrapower (Rybka), playchess.com 2009";
 r4r1k/ppqbn1pp/3b1p2/2pP3B/2P4N/7P/P2B1PP1/1R1QR1K1 w - - bm Rxe7; id "arasan2026.68"; c0 "Q9550(Rybka)-Arasan, ICC 2009";
