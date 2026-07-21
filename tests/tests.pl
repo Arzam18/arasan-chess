@@ -9,7 +9,7 @@ if (@ARGV) {
   $num_correct = 0;
   $tests = 1;
   $test_name = "";
-  %names = ( 'arasan' => 'arasan2024',
+  %names = ( 'arasan' => 'arasan2026',
              'ECM' => 'ecmgcp',
              'WAC' => 'wacnew',
              'IQ' => 'iq4',
