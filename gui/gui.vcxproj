@@ -126,7 +126,6 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>None</DebugInformationFormat>
       <OmitFramePointers>true</OmitFramePointers>
-      <CallingConvention>FastCall</CallingConvention>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>..\src;..\src\nnue;lunasvg\include</AdditionalIncludeDirectories>
     </ClCompile>
