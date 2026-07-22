@@ -1,450 +1,389 @@
+# Arasan Makefile for use with NMAKE on the Windows platform
+# Copyright 2004-2026 by Jon Dart. All Rights Reserved.
 #
-# Gnu Makefile for Arasan
-# Copyright 2004-2025 by Jon Dart. All Rights Reserved.
+VERSION=26.0
+LINK_VERSION=26.0
 #
-VERSION = 26.0
+#TARGET = win32
+TARGET = win64
 
-# paths, modify as needed:
+# Set PLATFORM=XP for a Windows XP compatible build
+PLATFORM=MODERN
+#PLATFORM=XP
 
-# location of source files
-SRC = ../src
-# location of .o files
-BUILD	= ../build
-# location for executables and binary book files
-EXPORT  = ../bin
-# location for profile-generating executables
-PROFILE = ../profile
-# location for profile information
-PROF_DATA = ../prof_data
-# location of release package
-RELEASE = ../release
-# location of book sources
-BOOK    = ../book
-# location of test files
-TESTS   = ../tests
-# installation directory (default)
-INSTALL = /usr/local/bin
-# location of the Syzygy tablebase source code (Fathom) (if used)
-STB=syzygy/src
-# directory for utility programs
-UTIL = util
-
-# default network
-NETWORK ?= arasanv8-20260622.nnue
-
-# Path to git_archive_all (https://github.com/Kentzo/git-archive-all)
-GIT_ARCHIVE_ALL_PATH ?= /home/jdart/bin/git-archive-all
+#TRACE=/D_TRACE
+#DEBUG=/Zi -D_DEBUG
+BUILD_ROOT=..
+UTIL=util
 
 # set to enable compliation with Syzygy tablebase support
-SYZYGY_TBS := 1
+SYZYGY_TBS = 1
 
-FLAGS := -I .
-ifdef SYZYGY_TBS
-FLAGS := $(FLAGS) -DSYZYGY_TBS
-endif
-ifdef TUNE
-FLAGS := $(FLAGS) -DTUNE
-endif
-NNUE_FLAGS := -Innue -DNETWORK=$(NETWORK)
+# location of SYZYGY tablebase code
+STB=syzygy\src
 
-#PROF     = -pg
-#DEBUG    = -g -D_DEBUG=1
-#TRACE    = -D_TRACE=1 -D_THREAD_TRACE
-shell        := $(SHELL)
-UNAME        := $(shell uname -s|awk '{print tolower($$0)}')
-ifndef OSTYPE
-OSTYPE       := $(UNAME)
-endif
-ARCH         := $(shell uname -m)
+# build flags for different instruction sets
+BASIC_SIMD_FLAGS = -DSIMD -DSSE2
+POPCNT_FLAGS = -DUSE_POPCNT -DSSSE3 -DSSE41
+BMI2_FLAGS= -DBMI2 $(POPCNT_FLAGS)
+AVX2_FLAGS= -DAVX2
+AVX512_FLAGS= -DAVX512
 
-# SMP flags
-SMPFLAGS =  -DSMP_STATS
-SMPLIB   = -lpthread
+!IfDef BUILD_TYPE
+!If "$(BUILD_TYPE)" == "old"
+!Else
+CFLAGS = $(CFLAGS) $(BASIC_SIMD_FLAGS)
+!Endif
+!If "$(BUILD_TYPE)" == "modern"
+CFLAGS = $(CFLAGS) $(POPCNT_FLAGS)
+!Else If "$(BUILD_TYPE)" == "avx2"
+CFLAGS = $(CFLAGS) $(POPCNT_FLAGS) $(AVX2_FLAGS) /arch:AVX2
+!Else If "$(BUILD_TYPE)" == "avx2-bmi2"
+CFLAGS = $(CFLAGS) $(POPCNT_FLAGS) $(AVX2_FLAGS) $(BMI2_FLAGS) /arch:AVX2
+!Else If "$(BUILD_TYPE)" == "avx512"
+CFLAGS = $(CFLAGS) $(POPCNT_FLAGS) $(AVX2_FLAGS) $(BMI2_FLAGS) $(AVX512_FLAGS) /arch:AVX512
+!Else
+# TBD: would like to fail here, not clear how in NMAKE
+!Endif
+!Else
+# default - no BUILD_TYPE defined
+CFLAGS = $(CFLAGS) $(BASIC_SIMD_FLAGS)
+!Endif
 
-POPCNT_FLAGS := -DUSE_POPCNT
-ifeq ("$(ARCH)","x86_64")
-BASIC_SIMD_FLAGS = -DSIMD -DSSE2 -msse2
-POPCNT_FLAGS := $(POPCNT_FLAGS) -DSSSE3 -DSSE41 -mssse3 -msse4.1 -msse4.2 -mpopcnt
-BMI2_FLAGS := $(POPCNT_FLAGS) -DBMI2 -mbmi2
-AVX2_FLAGS := -DAVX2 -mavx2 -mfma
-# re no-gather: see https://github.com/llvm/llvm-project/issues/87640
-AVX512_FLAGS := -DAVX512 -mavx512bw -mno-gather
-else ifeq ("$(ARCH)","arm64")
-NEON_FLAGS := -DSIMD -DNEON
-else ifeq ("$(ARCH)","aarch64")
-NEON_FLAGS := -DSIMD -DNEON
-endif
+TEST_OBJS = $(BUILD)\unit.obj $(BUILD)\binformat.obj $(BUILD)\nnuetest.obj
 
-ifdef BUILD_TYPE
-ifeq ("$(BUILD_TYPE)","old")
-else
-FLAGS := $(FLAGS) $(BASIC_SIMD_FLAGS)
-ifeq ("$(BUILD_TYPE)","modern")
-FLAGS := $(FLAGS) $(POPCNT_FLAGS)
-else ifeq ("$(BUILD_TYPE)","avx2")
-FLAGS := $(FLAGS)  $(POPCNT_FLAGS) $(AVX2_FLAGS)
-else ifeq ("$(BUILD_TYPE)","avx2-bmi2")
-FLAGS := $(FLAGS)  $(POPCNT_FLAGS) $(AVX2_FLAGS) $(BMI2_FLAGS)
-else ifeq ("$(BUILD_TYPE)","avx512")
-FLAGS := $(FLAGS)  $(POPCNT_FLAGS) $(AVX512_FLAGS) $(AVX2_FLAGS) $(BMI2_FLAGS)
-else ifeq ("$(BUILD_TYPE)","neon")
-FLAGS := $(FLAGS) $(NEON_FLAGS)
-else
-$(error unrecognized BUILD_TYPE: should be one of: old modern avx2 avx2-bmi2 avx512 neon)
-endif
-endif
-else
-# no BUILD_TYPE specified
-FLAGS := $(FLAGS) $(BASIC_SIMD_FLAGS)
-endif
+# Set executable name
+!Ifndef ARASANX
+!If "$(TARGET)" == "win64"
+ARASANX = arasanx-64
+!Else
+ARASANX = arasanx-32
+!Endif
+!If "$(BUILD_TYPE)" != ""
+ARASANX = $(ARASANX)-$(BUILD_TYPE)
+!Endif
+!Endif
 
-PGO_RUN_FLAGS = -H 64M -a
+# Target-specific flags
+!If "$(TARGET)" == "win64"
+ARCH=/D_WIN64
+HWLOC=$(HWLOC64)
+!Else
+HWLOC=$(HWLOC32)
+!Endif
 
-IN_GIT := $(shell git rev-parse --is-inside-work-tree)
-ifeq ("$(IN_GIT)","true")
-ARASAN_VERSION ?= $(shell git describe --tags --always)
-else
-ARASAN_VERSION ?= $(VERSION)
-endif
-FLAGS := $(FLAGS) -DARASAN_VERSION=$(ARASAN_VERSION)
+!Ifdef DEBUG
+DEST_DIR=debug
+LDFLAGS=$(LDFLAGS) /DEBUG
+!Else
+DEST_DIR=release
+!Endif
 
-ifeq ("$(ARCH)","x86_64")
-FLAGS := $(FLAGS) -msse2 -msse3
-endif
+BUILD = $(BUILD_ROOT)\$(TARGET)\$(DEST_DIR)
+PROFILE = $(BUILD_ROOT)\$(TARGET)\profile
+PROFDATA = $(BUILD_ROOT)\$(TARGET)\profdata
+PGO_BUILD = $(BUILD_ROOT)\$(TARGET)\pgo_build
+RELEASE = $(BUILD_ROOT)\release
+# relative to root:
+SOURCE_ARCHIVE = release\arasan_source$(VERSION).zip
 
-LBITS := $(shell getconf LONG_BIT)
-LIBS := -lc -lm
+!If "$(PLATFORM)"=="XP"
+CFLAGS=$(CFLAGS) /D_USING_V110_SDK71_ /DNTDDI_VERSION=0x05010300 /D_WIN32_WINNT=0x0501
+!Endif
+NETWORK = arasanv8-20260622.nnue
+NNUE_FLAGS=/Innue -DNETWORK=$(NETWORK)
 
-ifdef EXE
-ARASANX := $(EXE)
-else
-ifeq ($(LBITS),64)
-   FLAGS := $(FLAGS) -D_64BIT
-endif
-ARASANX := arasanx-$(LBITS)
-ifdef BUILD_TYPE
-ARASANX := $(ARASANX)-$(BUILD_TYPE)
-endif
-endif
+!Ifdef ARASAN_VERSION
+CFLAGS=$(CFLAGS) -DARASAN_VERSION=$(ARASAN_VERSION)
+!Else
+CFLAGS=$(CFLAGS) -DARASAN_VERSION=$(VERSION)
+!Endif
+TESTS = ..\tests
 
-ifeq ("$(CC)","icc")
-# Intel C++ compiler
-INTEL := 1
-else
-ifeq ("$(CC)","icpx")
-CLANG := 1
-ONEAPI := 1
-endif
-endif
+# SMP flags. Note: we don't support a non-SMP build any more.
+!Ifdef DEBUG
+SMP=/MTd /DSMP_STATS
+!Else
+SMP=/MT /DSMP_STATS
+!Endif
+# Do not run profile multithreaded - fails on current VC++ versions
+#PROF_RUN_SMP=-c 2
 
-ifdef INTEL
-CPP     := $(CC)
-LD      := $(CC)
-AR      := xiar
-FLAGS  := $(FLAGS) -std=c++17 -fno-strict-aliasing -DUSE_INTRINSICS -DUSE_ASM
-PROF_GEN = -prof-gen -prof-dir $(PROF_DATA)
-PROF_USE = -prof-use -ip -prof-dir $(PROF_DATA)
-ifndef DEBUG
-OPT     = -O3 -fno-rtti -DNDEBUG
-endif
+!Ifndef CC
+CC = cl
+!Endif
+LD=link
 
-else
-# not Intel
+# Linker flags
+LDFLAGS  = $(LDFLAGS) kernel32.lib user32.lib winmm.lib /nologo /incremental:no $(LINKOPT) /stack:4000000 /version:$(LINK_VERSION)
+!If "$(PLATFORM)" == "XP"
+!If "$(TARGET)" == "win64"
+LDFLAGS = $(LDFLAGS) /subsystem:console,5.02
+!Else
+LDFLAGS = $(LDFLAGS) /subsystem:console,5.01
+!Endif
+!Else
+LDFLAGS = $(LDFLAGS) /subsystem:console
+!Endif
 
-ifneq (,$(findstring clang,$(CC)))
-CLANG := 1
-else
-# detect 'cc' aliased to 'clang'
-CC_VERSION := $(shell $(CC) -v  2>&1 >/dev/null | cat)
-ifneq (,$(findstring clang,$(CC_VERSION)))
-CLANG := 1
-endif
-endif
+# compile flags
+CFLAGS = $(CFLAGS) $(ARCH) /GA /GF /EHsc /D_CONSOLE /D_CRT_SECURE_NO_DEPRECATE /GF /DNOMINMAX /W2 $(TRACE) $(SMP)
+# optimizations
+!Ifndef DEBUG
+!If "$(TARGET)"=="win64"
+!If "$(PLATFORM)" == "XP"
+OPT  = /Ox /Gr /Gy /GS- /DNDEBUG
+!Else
+OPT  = /Ox /Gr /Gy /Oi /GS- /DUSE_INTRINSICS /DNDEBUG
+!Endif
+LINKOPT = /LTCG /OPT:REF,ICF
+!Else
+OPT  = /Ox /Gr /Gy /GS- /DUSE_INTRINSICS /DNDEBUG
+LINKOPT = /LTCG /OPT:REF
+!Endif
+!Endif
 
-ifdef CLANG
+!If "$(CC)" == "icx-cl"
+CFLAGS = $(CFLAGS) /Qstd=c++17
+PROF_GEN_FLAGS = $(CFLAGS) $(NNUE_FLAGS) $(OPT)
+LD = xilink
+PROF_GEN_LD = $(LD)
+!Ifndef DEBUG
+LTO = /Qipo
+!Endif
+!Else
+!If "$(CC)" == "clang-cl"
+CFLAGS = $(CFLAGS) /std:c++17
+!If "$(BUILD_TYPE)" == "modern"
+# needed to indicate CPU has POPCNT support
+CFLAGS = $(CFLAGS) -march=nehalem
+!Else
+!If "$(BUILD_TYPE)" == "avx512"
+# see https://github.com/llvm/llvm-project/issues/87640
+CFLAGS = $(CFLAGS) -mno-gather
+!Endif
+!Endif
+!Ifndef DEBUG
+LTO = -flto
+!Endif
+PROF_GEN_FLAGS = $(CFLAGS) $(NNUE_FLAGS) $(OPT) -fprofile-generate=$(PROFDATA)
+PROF_USE_FLAGS = $(CFLAGS) $(NNUE_FLAGS) $(OPT) $(LTO) -fprofile-use=$(PROFDATA)\default.profdata
+# first link
+PROF_LINK_FLAGS = -fprofile-generate=$(PROFDATA)
+# final link
+#PROF_LINK_FLAGS2 = -fprofile-use=$(PROFDATA)default.profdata
+PROF_GEN_LD = $(CC)
+# must use lld-link because LTO is enabled
+PROF_USE_LD = lld-link
+LD = lld-link
+!Else
+# MSVC
+CFLAGS = $(CFLAGS) /std:c++17
+!Ifndef DEBUG
+LTO = /GL
+!Endif
+PROF_GEN_FLAGS = $(CFLAGS) $(NNUE_FLAGS) $(OPT) $(LTO)
+PROF_LINK_FLAGS = /LTCG /GENPROFILE /pgd:$(PROFILE)\arasanx.pgd
+LD = link
+PROF_GEN_LD = $(LD)
+!Endif
+!Endif
 
-CPP     := $(CC)
-LD      := $(CC)
-AR      = ar
+TB_FLAGS = $(CFLAGS) $(DEBUG) $(SMP) /Gr /O1 /GS- /I$(TB) /I.
+TB_PROFILE_FLAGS = $(TB_FLAGS)
+PROF_RUN_FLAGS = -H 64M $(PROF_RUN_SMP)
+!Ifdef PASS2
+PROF_FLAGS=$(PROF_USE_FLAGS)
+!Else
+PROF_FLAGS=$(PROF_GEN_FLAGS)
+!Endif
 
-LLVM_PROFDATA ?= llvm-profdata
-LLVM_PROFGEN ?= llvm-profgen
+default: dirs $(BUILD)\$(ARASANX).exe
 
-ifdef CSSPGO
-ifdef ONEAPI
-PROF_GEN = -fprofile-sample-generate
-PROF_USE = -fprofile-sample-use=$(PROF_DATA)/arasanx.freq.prof
-else
-PROF_GEN = -fpseudo-probe-for-profiling
-PROF_USE = -fprofile-sample-use=$(PROF_DATA)/arasanx.freq.prof
-endif
-else
-PROF_GEN = -fprofile-generate=$(PROF_DATA)
-# extra flags for compile only (not link):
-PROF_GEN_EXTRA = -mllvm -enable-name-compression=false
-PROF_USE = -fprofile-use=$(PROF_DATA)
-endif
+profile: dirs $(PROFILE)\$(ARASANX).exe
 
-FLAGS := -std=c++17 -Wall -Wextra -Wshadow -fno-strict-aliasing -DUSE_INTRINSICS -DUSE_ASM $(FLAGS)
-ifndef DEBUG
-LTO := -flto
-OPT     = -O3 -fno-rtti -DNDEBUG
-LDFLAGS := $(LDFLAGS) $(OPT)
-ifeq ($(findstring darwin,$(OSTYPE)),)
-ifeq ($(findstring cygwin,$(OSTYPE)),)
-ifeq ($(findstring msys,$(OSTYPE)),)
-# "Gold" not supported on darwin or cygwin
-LDFLAGS := $(LDFLAGS) -fuse-ld=gold
-endif
-endif
-endif
-endif
+utils: dirs $(BUILD)\playchess.exe $(BUILD)\makebook.exe \
+$(BUILD)\ecocoder.exe $(BUILD)\selfplay.exe $(BUILD)\blundercheck.exe \
+$(BUILD)\sortpgn.exe
 
-else
+unit: dirs $(BUILD)\unit.exe
 
-CC ?= g++
-CPP     := $(CC)
-LD      := $(CC)
-AR      = ar
+!IfDef SYZYGY_TBS
+CFLAGS = $(CFLAGS) /I. -DSYZYGY_TBS
+STB_FLAGS = /TP /I. /I$(STB) $(CFLAGS)
+STB_PROFILE_FLAGS = $(STB_FLAGS)
+TB_OBJS = $(TB_OBJS) $(BUILD)\syzygy.obj $(BUILD)\tbprobe.obj
+TB_PROFILE_OBJS = $(TB_PROFILE_OBJS) $(PROFILE)\syzygy.obj $(PROFILE)\tbprobe.obj
+$(BUILD)\tbprobe.obj: $(STB)\tbprobe.c
+	$(CC) $(STB_FLAGS) $(OPT) $(LTO) $(DEBUG) /c /Fo$@ $(STB)\tbprobe.c
+$(PROFILE)\tbprobe.obj: $(STB)\tbprobe.c
+	$(CC) $(STB_PROFILE_FLAGS) $(OPT) $(DEBUG) /c /Fo$@ $(STB)\tbprobe.c
+!Endif
+NNUE_OBJS = $(BUILD)\evaluate.obj
+NNUE_PROFILE_OBJS = $(PROFILE)\evaluate.obj
 
-PROF_GEN = -fprofile-generate -fprofile-dir=$(PROF_DATA)
-PROF_USE = -fprofile-use -fprofile-dir=$(PROF_DATA)
+ARASANX_OBJS = $(BUILD)\arasanx.obj $(BUILD)\tester.obj \
+$(BUILD)\protocol.obj $(BUILD)\input.obj \
+$(BUILD)\attacks.obj $(BUILD)\bhash.obj $(BUILD)\bitutil.obj \
+$(BUILD)\board.obj $(BUILD)\boardio.obj $(BUILD)\options.obj \
+$(BUILD)\chess.obj $(BUILD)\material.obj $(BUILD)\movegen.obj \
+$(BUILD)\scoring.obj $(BUILD)\searchc.obj \
+$(BUILD)\see.obj $(BUILD)\globals.obj $(BUILD)\search.obj \
+$(BUILD)\notation.obj $(BUILD)\hash.obj $(BUILD)\stats.obj \
+$(BUILD)\bitprobe.obj $(BUILD)\epdrec.obj $(BUILD)\chessio.obj \
+$(BUILD)\movearr.obj $(BUILD)\bookread.obj $(BUILD)\bookwrit.obj \
+$(BUILD)\calctime.obj $(BUILD)\legal.obj $(BUILD)\eco.obj \
+$(BUILD)\learn.obj $(BUILD)\bench.obj \
+$(BUILD)\threadp.obj $(BUILD)\threadc.obj \
+$(TB_OBJS) $(NNUE_OBJS)
 
-GCCMINVERSION := 7
-# check for bc
-ifeq (, $(shell which bc))
-$(error "No 'bc' found in PATH, please install it")
-endif
-# Get GCC major version
-GCCVER := $(shell expr `$(CC) -dumpfullversion | gawk 'match($$0, "^([0-9]+)?(\\\\.[0-9]+)+", a) {print a[1]}'`)
-GCC11 := $(shell echo '$(GCCVER) >= 11.0' | bc)
-GCCNEW := $(shell echo '$(GCCVER) >= $(GCCMINVERSION)' | bc)
+ARASANX_PROFILE_OBJS = $(PROFILE)\arasanx.obj $(PROFILE)\tester.obj \
+$(PROFILE)\protocol.obj $(PROFILE)\input.obj \
+$(PROFILE)\attacks.obj $(PROFILE)\bhash.obj $(PROFILE)\bitutil.obj \
+$(PROFILE)\board.obj $(PROFILE)\boardio.obj $(PROFILE)\options.obj \
+$(PROFILE)\chess.obj $(PROFILE)\material.obj $(PROFILE)\movegen.obj \
+$(PROFILE)\scoring.obj $(PROFILE)\searchc.obj \
+$(PROFILE)\see.obj $(PROFILE)\globals.obj $(PROFILE)\search.obj \
+$(PROFILE)\notation.obj $(PROFILE)\hash.obj $(PROFILE)\stats.obj \
+$(PROFILE)\bitprobe.obj $(PROFILE)\epdrec.obj $(PROFILE)\chessio.obj \
+$(PROFILE)\movearr.obj $(PROFILE)\bookread.obj $(PROFILE)\bookwrit.obj \
+$(PROFILE)\calctime.obj $(PROFILE)\legal.obj $(PROFILE)\eco.obj \
+$(PROFILE)\learn.obj $(PROFILE)\bench.obj \
+$(PROFILE)\threadp.obj $(PROFILE)\threadc.obj \
+$(NNUE_PROFILE_OBJS) $(TB_PROFILE_OBJS)
 
-ifeq "$(GCCNEW)" "1"
-# options for GCC
-FLAGS := -Wall -Wextra -Wshadow -fno-strict-aliasing -DUSE_INTRINSICS -DUSE_ASM $(FLAGS)
-LDFLAGS := $(LDFLAGS)
-ifneq "$(GCC11)" "1"
-# c++17 support must be enabled explicitly
-FLAGS := $(FLAGS) -std=c++17
-endif
-SMPFLAGS := $(SMPFLAGS) -pthread
-ifeq ($(findstring darwin,$(OSTYPE)),)
-ifeq ($(findstring cygwin,$(OSTYPE)),)
-ifeq ($(findstring msys,$(OSTYPE)),)
-LDFLAGS := $(LDFLAGS) -fuse-ld=gold
-endif
-endif
-endif
-ifndef DEBUG
-OPT	:= -Ofast -fno-rtti -fno-enforce-eh-specs -DNDEBUG
-LTO     := -flto
-LDFLAGS := $(LDFLAGS) $(OPT)
-endif
-else
-$(error GCC version is $(GCCVER): versions < $(GCCMINVERSION) not supported)
-endif
+UTIL_OBJS = $(BUILD)\globals.obj $(BUILD)\board.obj \
+$(BUILD)\boardio.obj $(BUILD)\material.obj $(BUILD)\chess.obj \
+$(BUILD)\attacks.obj $(BUILD)\bitutil.obj $(BUILD)\chessio.obj \
+$(BUILD)\epdrec.obj $(BUILD)\bhash.obj \
+$(BUILD)\scoring.obj $(BUILD)\see.obj \
+$(BUILD)\movearr.obj $(BUILD)\notation.obj $(BUILD)\options.obj \
+$(BUILD)\bitprobe.obj $(BUILD)\bookread.obj $(BUILD)\bookwrit.obj \
+$(BUILD)\movegen.obj $(BUILD)\calctime.obj $(BUILD)\eco.obj \
+$(BUILD)\legal.obj $(BUILD)\stats.obj $(BUILD)\threadp.obj \
+$(BUILD)\threadc.obj $(BUILD)\search.obj $(BUILD)\searchc.obj \
+$(BUILD)\hash.obj $(BUILD)\learn.obj $(TB_OBJS) $(NNUE_OBJS)
 
-endif
-endif
+MAKEBOOK_OBJS = $(BUILD)\makebook.obj $(UTIL_OBJS)
 
-ifeq ("darwin","$(findstring darwin,$(OSTYPE))")
-FLAGS := -D_MAC $(FLAGS)
-LDFLAGS := $(LDFLAGS)
-LLVM_PROFDATA := xcrun $(LLVM_PROFDATA)
-else
-LIBS := $(LIBS) -lrt
-LLVM_PROFDATA := $(LLVM_PROFDATA)
-endif
+ECOCODER_OBJS = $(BUILD)\ecocoder.obj $(UTIL_OBJS)
 
-default: dirs $(EXPORT)/$(ARASANX)
+PLAYCHESS_OBJS = $(BUILD)\playchess.obj $(UTIL_OBJS)
 
-utils: dirs $(EXPORT)/playchess $(EXPORT)/makebook $(EXPORT)/ecocoder $(EXPORT)/selfplay $(EXPORT)/blundercheck $(EXPORT)/sortpgn
+SELFPLAY_OBJS = $(BUILD)\selfplay.obj $(UTIL_OBJS) $(BUILD)\binformat.obj
 
-unit: dirs $(EXPORT)/unit
+BLUNDERCHECK_OBJS = $(BUILD)\blundercheck.obj $(UTIL_OBJS)
+
+SORTPGN_OBJS = $(BUILD)\sortpgn.obj $(UTIL_OBJS)
+
+UNIT_OBJS = $(TEST_OBJS) $(UTIL_OBJS)
+
+{}.cpp{$(BUILD)}.obj:
+    $(CC) $(OPT) $(LTO) $(DEBUG) $(CFLAGS) $(NNUE_FLAGS) /c /Fo$@ $<
+
+{$(UTIL)}.cpp{$(BUILD)}.obj:
+    $(CC) $(OPT) $(LTO) $(DEBUG) $(CFLAGS) $(NNUE_FLAGS) /I. /c /Fo$@ $<
+
+{}.cpp{$(PROFILE)}.obj:
+    $(CC) $(PROF_FLAGS) /c /Fo$@ $<
+
+$(BUILD)\makebook.exe:  $(MAKEBOOK_OBJS)
+        $(LD) $(MAKEBOOK_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\makebook.exe
+
+$(BUILD)\ecocoder.exe:  $(ECOCODER_OBJS)
+        $(LD) $(ECOCODER_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\ecocoder.exe
+
+$(BUILD)\$(ARASANX).exe:  dirs $(ARASANX_OBJS)
+        $(LD) $(ARASANX_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\$(ARASANX).exe
+
+$(BUILD)\playchess.exe: dirs $(PLAYCHESS_OBJS)
+        $(LD) $(PLAYCHESS_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\playchess.exe
+
+$(BUILD)\selfplay.exe: dirs $(SELFPLAY_OBJS)
+        $(LD) $(SELFPLAY_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\selfplay.exe
+
+$(BUILD)\blundercheck.exe: dirs $(BLUNDERCHECK_OBJS)
+        $(LD) $(BLUNDERCHECK_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\blundercheck.exe
+
+$(BUILD)\sortpgn.exe: dirs $(SORTPGN_OBJS)
+        $(LD) $(SORTPGN_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\sortpgn.exe
+
+$(BUILD)\unit.exe: dirs $(UNIT_OBJS)
+        $(LD) $(UNIT_OBJS) $(LINKOPT) $(LDFLAGS) /out:$(BUILD)\unit.exe
+
+$(PROFILE)\$(ARASANX).exe: $(ARASANX_PROFILE_OBJS)
+!If "$(CC)"=="clang-cl"
+!Ifdef PASS2
+   $(PROF_USE_LD) $(PROF_LINK_FLAGS2) $(ARASANX_PROFILE_OBJS) /out:$(BUILD)\$(ARASANX).exe $(LDFLAGS)
+!Else
+    $(PROF_GEN_LD) $(PROF_LINK_FLAGS) $(ARASANX_PROFILE_OBJS) -o$(PROFILE)\$(ARASANX).exe /link $(LDFLAGS)
+!Endif
+!Else
+#MSVC
+    $(PROF_GEN_LD) $(PROF_LINK_FLAGS) $(LDFLAGS) $(ARASANX_PROFILE_OBJS) /out:$(PROFILE)\$(ARASANX).exe
+!Endif
+
+profile-run: dirs
+    del /q $(PROFDATA)\*.*
+    $(PROFILE)\$(ARASANX) $(PROF_RUN_FLAGS) bench
+
+!If "$(CC)" == "clang-cl"
+profile-optimized: profile-pass2 $(ARASANX_PROFILE_OBJS)
+
+!Ifdef BUILD_TYPE
+profile-pass2: pass2-prepare
+   $(MAKE) PASS2=1 BUILD_TYPE=$(BUILD_TYPE) CC=$(CC) profile
+!Else
+profile-pass2: pass2-prepare
+   $(MAKE) PASS2=1 CC=$(CC) profile
+!Endif
+
+pass2-prepare:
+   llvm-profdata merge -output=$(PROFDATA)/default.profdata $(PROFDATA)/default_*profraw
+   del /q $(PROFILE)\*.obj
+
+!Else
+profile-optimized: $(ARASANX_PROFILE_OBJS)
+    copy /y $(PROFILE)\*.pgc $(PGO_BUILD)
+    copy /y $(PROFILE)\*.pgd $(PGO_BUILD)
+    copy /y $(PROFILE)\*.obj $(PGO_BUILD)
+    $(LD) /LTCG /USEPROFILE /pgd:$(PGO_BUILD)\arasanx.pgd $(LDFLAGS) $(ARASANX_PROFILE_OBJS) /out:$(BUILD)\$(ARASANX).exe
+!Endif
+
+profile-build: dirs profile profile-run profile-optimized
+
+profiled: profile-build
+
+release: $(RELEASE) $(SOURCE_ARCHIVE)
+
+$(SOURCE_ARCHIVE):
+	call release.bat $(SOURCE_ARCHIVE)
+
+$(PROFILE):
+	md $(PROFILE)
+
+$(BUILD):
+	md $(BUILD)
+
+$(PROFDATA):
+	md $(PROFDATA)
+
+$(PGO_BUILD):
+	md $(PGO_BUILD)
+
+$(RELEASE):
+	md $(RELEASE)
 
 clean: dirs
-	rm -f $(BUILD)/*.o
-	rm -f $(PROFILE)/*.o
-	rm -f $(PROFILE)/*.gcda
-	rm -f $(PROFILE)/*.gcno
-	rm -f $(PROFILE)/*.dyn
-	rm -f $(PROFILE)/*.nnue
-	rm -f $(PROF_DATA)/*.*
-	cd $(EXPORT) && rm -f arasanx* makebook playchess ecocoder selfplay blundercheck sortpgn unit
+	del $(BUILD)\*.obj
+	del $(BUILD)\*.exe
+	del $(BUILD)\*.asm
+	del $(PROFILE)\*.asm
+	del $(PROFILE)\*.pgc
+	del $(PROFILE)\*.pgd
+	del $(PROFILE)\*.obj
+	del $(PROFILE)\*.exe
+	del /q $(RELEASE)\*.*
+	del /q $(PGO_BUILD)\*.*
 
-dirs:
-	mkdir -p $(BUILD)
-	mkdir -p $(EXPORT)
-	mkdir -p $(PROFILE)
-	mkdir -p $(PROF_DATA)
-
-release:
-	mkdir -p ../release
-	cd .. && $(GIT_ARCHIVE_ALL_PATH)/git_archive_all.py --prefix arasan-$(VERSION)/ release/arasan-$(VERSION).tar
-	gzip ../release/arasan-$(VERSION).tar
-
-install: default
-	mkdir -p $(INSTALL)/arasan-$(VERSION)
-	cp $(EXPORT)/$(ARASANX) $(INSTALL)/arasan-$(VERSION)
-	cp ../network/$(NETWORK) $(INSTALL)/arasan-$(VERSION)
-	chmod 755 $(INSTALL)/arasan-$(VERSION)/$(ARASANX)
-	ln -s $(INSTALL)/arasan-$(VERSION)/$(ARASANX) $(INSTALL)/arasan-$(VERSION)/arasanx
-	cp $(SRC)/arasan.rc $(INSTALL)/arasan-$(VERSION)
-	chmod u+s $(INSTALL)/arasan-$(VERSION)/$(ARASANX)
-
-$(BUILD)/%.o: %.cpp
-	$(CPP) $(FLAGS) $(OPT) $(TRACE) $(SMPFLAGS) $(NNUE_FLAGS) $(DEBUG) $(CXXFLAGS) -c -o $@ $<
-
-$(BUILD)/%.o: $(UTIL)/%.cpp
-	$(CPP) $(FLAGS) $(OPT) $(TRACE) $(SMPFLAGS) $(NNUE_FLAGS) $(DEBUG) $(CXXFLAGS) -c -o $@ $<
-
-ifeq ($(PASS),1)
-CPP_PROF_FLAGS := $(PROF_GEN) $(OPT) $(TRACE) $(FLAGS) $(SMPFLAGS) $(NNUE_FLAGS) $(DEBUG) $(CXXFLAGS)
-else
-CPP_PROF_FLAGS := $(PROF_USE) $(OPT) $(LTO) $(TRACE) $(FLAGS) $(SMPFLAGS) $(NNUE_FLAGS) $(DEBUG) $(CXXFLAGS)
-endif
-
-$(PROFILE)/%.o: %.cpp
-	$(CPP) $(CPP_PROF_FLAGS) $(PROF_GEN_EXTRA) $(CXXFLAGS) -c -o $@ $<
-
-$(PROFILE)/%.o: nnue/%.cpp
-	$(CC) $(CPP_PROF_FLAGS) $(PROF_GEN_EXTRA) $(CXXFLAGS) -c -o $@ $<
-
-profiled: dirs
-	ln -s -f ../network/*.nnue $(PROFILE)
-	@$(MAKE) PASS=1 BUILD_TYPE=$(BUILD_TYPE) PGO=1 profile
-	@$(MAKE) PASS=1 BUILD_TYPE=$(BUILD_TYPE) PGO=1 profile-run
-ifdef CLANG
-ifdef CSSPGO
-	$(LLVM_PROFGEN) --perfdata $(PROF_DATA)/arasanx.perf.data --binary $(PROFILE)/arasanx --output $(PROF_DATA)/arasanx.freq.prof
-else
-	$(LLVM_PROFDATA) merge -output=$(PROF_DATA)/default.profdata $(PROF_DATA)/default_*profraw
-endif
-endif
-	@$(MAKE) PASS=2 BUILD_TYPE=$(BUILD_TYPE) PGO=1 profile
-
-ifdef SYZYGY_TBS
-TB_SOURCES := $(TB_SOURCES) syzygy.cpp $(STB)/tbprobe.c
-TB_OBJS := $(BUILD)/syzygy.o $(BUILD)/tbprobe.o
-TB_PROFILE_OBJS := $(PROFILE)/syzygy.o $(PROFILE)/tbprobe.o
-STB_FLAGS := -x c++
-$(BUILD)/%.o: $(STB)/%.c
-	$(CC)  $(FLAGS) $(STB_FLAGS) $(OPT) $(DEBUG) $(CXXFLAGS) -c $< -o $@
-
-$(PROFILE)/%.o: $(STB)/%.c
-	$(CC) $(STB_FLAGS) $(CPP_PROF_FLAGS) $(PROF_GEN_EXTRA) $(CXXFLAGS) -c $< -o $@
-
-endif
-
-ARASANX_SOURCES = arasanx.cpp tester.cpp bench.cpp protocol.cpp \
-input.cpp globals.cpp board.cpp boardio.cpp material.cpp \
-chess.cpp attacks.cpp \
-bitutil.cpp chessio.cpp epdrec.cpp bhash.cpp  \
-scoring.cpp see.cpp \
-movearr.cpp notation.cpp options.cpp bitprobe.cpp \
-bookread.cpp bookwrit.cpp \
-search.cpp searchc.cpp learn.cpp \
-movegen.cpp hash.cpp calctime.cpp eco.cpp legal.cpp \
-stats.cpp threadp.cpp threadc.cpp evaluate.cpp
-
-UTIL_SOURCES = globals.cpp  \
-board.cpp boardio.cpp material.cpp \
-chess.cpp attacks.cpp \
-bitutil.cpp chessio.cpp epdrec.cpp bhash.cpp  \
-scoring.cpp see.cpp \
-movearr.cpp notation.cpp options.cpp bitprobe.cpp \
-bookread.cpp bookwrit.cpp \
-search.cpp searchc.cpp learn.cpp \
-movegen.cpp hash.cpp calctime.cpp eco.cpp \
-legal.cpp stats.cpp threadp.cpp threadc.cpp evaluate.cpp
-
-UNIT_SOURCES = unit.cpp nnuetest.cpp binformat.cpp \
-globals.cpp board.cpp boardio.cpp material.cpp \
-chess.cpp attacks.cpp \
-bitutil.cpp chessio.cpp epdrec.cpp bhash.cpp  \
-scoring.cpp see.cpp \
-movearr.cpp notation.cpp options.cpp bitprobe.cpp \
-bookread.cpp bookwrit.cpp \
-search.cpp searchc.cpp learn.cpp \
-movegen.cpp hash.cpp calctime.cpp eco.cpp legal.cpp \
-stats.cpp threadp.cpp threadc.cpp evaluate.cpp
-
-MAKEBOOK_SOURCES = makebook.cpp $(UTIL_SOURCES)
-
-ECOCODER_SOURCES = ecocoder.cpp $(UTIL_SOURCES)
-
-PLAYCHESS_SOURCES = playchess.cpp $(UTIL_SOURCES)
-
-SELFPLAY_SOURCES = selfplay.cpp $(UTIL_SOURCES) binformat.cpp
-
-BLUNDERCHECK_SOURCES = blundercheck.cpp $(UTIL_SOURCES)
-
-SORTPGN_SOURCES = sortpgn.cpp $(UTIL_SOURCES)
-
-ARASANX_PROFILE_OBJS := $(patsubst %.cpp, $(PROFILE)/%.o, $(ARASANX_SOURCES)) $(ASM_PROFILE_OBJS) $(TB_PROFILE_OBJS)
-ARASANX_OBJS    := $(patsubst %.cpp, $(BUILD)/%.o, $(ARASANX_SOURCES)) $(TB_OBJS)
-MAKEBOOK_OBJS   := $(patsubst %.cpp, $(BUILD)/%.o, $(MAKEBOOK_SOURCES)) $(TB_OBJS)
-ECOCODER_OBJS   := $(patsubst %.cpp, $(BUILD)/%.o, $(ECOCODER_SOURCES)) $(TB_OBJS)
-PLAYCHESS_OBJS  := $(patsubst %.cpp, $(BUILD)/%.o, $(PLAYCHESS_SOURCES)) $(TB_OBJS)
-SELFPLAY_OBJS   := $(patsubst %.cpp, $(BUILD)/%.o, $(SELFPLAY_SOURCES)) $(TB_OBJS)
-BLUNDERCHECK_OBJS := $(patsubst %.cpp, $(BUILD)/%.o, $(BLUNDERCHECK_SOURCES)) $(TB_OBJS)
-SORTPGN_OBJS 	:= $(patsubst %.cpp, $(BUILD)/%.o, $(SORTPGN_SOURCES)) $(TB_OBJS)
-UNIT_OBJS       := $(patsubst %.cpp, $(BUILD)/%.o, $(UNIT_SOURCES)) $(TB_OBJS)
-
-$(EXPORT)/makebook:  $(MAKEBOOK_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(MAKEBOOK_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/makebook -lstdc++ $(LIBS) $(SMPLIB)
-
-$(EXPORT)/ecocoder:  $(ECOCODER_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(ECOCODER_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/ecocoder -lstdc++ $(LIBS) $(SMPLIB)
-
-$(EXPORT)/playchess:  $(PLAYCHESS_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(PLAYCHESS_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/playchess -lstdc++ $(LIBS) $(SMPLIB)
-
-$(EXPORT)/selfplay:  $(SELFPLAY_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(SELFPLAY_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/selfplay -lstdc++ $(LIBS) $(SMPLIB)
-
-$(EXPORT)/blundercheck:  $(BLUNDERCHECK_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(BLUNDERCHECK_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/blundercheck -lstdc++ $(LIBS) $(SMPLIB)
-
-$(EXPORT)/sortpgn:  $(SORTPGN_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(SORTPGN_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/sortpgn -lstdc++ $(LIBS) $(SMPLIB)
-
-$(EXPORT)/unit: $(UNIT_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(UNIT_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/unit -lstdc++ $(LIBS) $(SMPLIB)
-
-ifeq ($(PASS),1)
-profile: dirs $(PROFILE)/arasanx
-else
-profile: dirs $(EXPORT)/$(ARASANX)
-endif
-
-ifeq ($(PASS),1)
-$(PROFILE)/arasanx:  $(ARASANX_PROFILE_OBJS)
-	cd $(PROFILE) && $(LD) $(PROF_GEN) $(ARASANX_PROFILE_OBJS) $(DEBUG) $(CXXFLAGS) -o $(PROFILE)/arasanx -lstdc++ $(LIBS) $(SMPLIB)
-else
-ifeq ($(PASS),2)
-$(EXPORT)/$(ARASANX):  $(ARASANX_PROFILE_OBJS)
-	cd $(PROFILE) && $(LD) $(PROF_USE) $(OPT) $(LTO) $(ARASANX_PROFILE_OBJS) $(DEBUG) $(CXXFLAGS) -o $@ -lstdc++ $(LIBS) $(SMPLIB)
-else
-# non-PGO build
-$(EXPORT)/$(ARASANX):  $(ARASANX_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(ARASANX_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/$(ARASANX) -lstdc++ $(LIBS) $(SMPLIB)
-endif
-endif
-
-profile-run:
-ifdef CSSPGO
-	perf record -o $(PROF_DATA)/arasanx.perf.data -b -c 100003 -e br_inst_retired.near_taken:uppp -- $(PROFILE)/arasanx $(PROFILE_RUN_FLAGS) bench
-	rm $(PROFILE)/*.o
-	rm -f $(EXPORT)/arasanx
-else
-	$(PROFILE)/arasanx $(PGO_RUN_FLAGS) bench
-	rm $(PROFILE)/*.o
-	rm -f $(PROFILE)/arasanx $(EXPORT)/arasanx
-endif
-
-.PHONY: all clean dirs profile profile-run install release unit
-
-.EXPORT_ALL_VARIABLES:
-
+dirs: $(BUILD) $(PROFILE) $(PROFDATA) $(PGO_BUILD) $(RELEASE)
