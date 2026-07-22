@@ -20,6 +20,7 @@ gui/help/html/* text eol=crlf
 prj/* text eol=crlf
 
 # Denote all files that are truly binary and should not be modified.
+*.bin binary
 *.doc binary
 *.nnue binary
 *.TTF binary
