@@ -40,7 +40,11 @@ Source: "book\chess-openings\*"; DestDir: "{app}\chess-openings"; Components: GU
 Source: "win64\release\arasanx-64.exe"; DestDir: "{app}"; Components: engine
 Source: "network\arasanv8-20260622.nnue"; DestDir: "{app}"; Components: engine
 Source: "book\book.bin"; DestDir: "{app}"; Components: book
-Source: "LICENSE"; DestDir: "{app}"; Components: engine;
+Source: "LICENSE"; DestDir: "{app}\LICENSES"; Components: engine; DestName: "LICENSE.txt"
+Source: "gui\lunasvg\LICENSE"; DestDir: "{app}\LICENSES"; DestName: "LICENSE-lunasvg.txt"; Components: GUI;
+Source: "gui\pieces\celtic\LICENSE.txt"; DestDir: "{app}\LICENSES"; DestName: "LICENSE-celtic"; Components: GUI;
+Source: "gui\pieces\spatial\LICENSE.txt"; DestDir: "{app}\LICENSES"; DestName: "LICENSE-spatial.txt"; Components: GUI;
+Source: "src\syzygy\LICENSE"; DestDir: "{app}\LICENSES"; DestName: "LICENSE-syzygy.txt"; Components: engine;
 
 [Icons]
 Name: "{group}\Arasan (64-bit)"; Components: GUI; Filename: {app}\arasan-64.exe; Comment: "Arasan Chess Program (64-bit)"; IconFileName: {app}\arasan.ico
