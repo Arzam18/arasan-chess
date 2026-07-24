@@ -33,7 +33,6 @@ jobs:
     - name: Compile Arasan for Android (ARM64)
       run: |
         cd src
-        # Clean any prior broken/empty outputs
         rm -rf ../bin/* ../build/*
         
         make -j$(nproc) \
@@ -44,13 +43,12 @@ jobs:
           LTO= \
           LIBS="-lc++_shared -lm"
           
-        # Strip debugging symbols to check actual functional size
+        # Strip debugging symbols to optimize final executable size
         "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" ../bin/arasanx-*
 
     - name: Verify Binary Size
       run: |
         ls -lh bin/
-        # Fail workflow if binary is suspiciously tiny (< 100KB)
         find bin/ -type f -size -100k -exec echo "Error: Binary is too small!" \; -exec exit 1 \;
 
     - name: Upload Artifact
