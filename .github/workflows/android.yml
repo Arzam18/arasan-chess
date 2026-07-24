@@ -26,13 +26,16 @@ jobs:
         # Replace std::aligned_alloc with posix_memalign safely in types.h
         sed -i 's|std::aligned_alloc(alignment,size)|({ void* ptr=nullptr; posix_memalign(\&ptr, alignment, size); ptr; })|g' src/types.h
         
-        # Remove hardcoded -fuse-ld=gold and -lpthread from the Makefile for Android compatibility
+        # Remove hardcoded flags incompatible with Android's NDK LLVM toolchain
         sed -i 's|-fuse-ld=gold||g' src/Makefile
         sed -i 's|-lpthread||g' src/Makefile
 
     - name: Compile Arasan for Android (ARM64)
       run: |
         cd src
+        # Clean any prior broken/empty outputs
+        rm -rf ../bin/* ../build/*
+        
         make -j$(nproc) \
           CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang" \
           CXX="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" \
@@ -40,9 +43,18 @@ jobs:
           BUILD_TYPE=neon \
           LTO= \
           LIBS="-lc++_shared -lm"
+          
+        # Strip debugging symbols to check actual functional size
+        "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" ../bin/arasanx-*
+
+    - name: Verify Binary Size
+      run: |
+        ls -lh bin/
+        # Fail workflow if binary is suspiciously tiny (< 100KB)
+        find bin/ -type f -size -100k -exec echo "Error: Binary is too small!" \; -exec exit 1 \;
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: arasan-android-arm64
-        path: src/arasanx*
+        path: bin/arasanx-*
