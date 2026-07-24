@@ -36,6 +36,7 @@ jobs:
           ARCH=aarch64 \
           BUILD_TYPE=neon \
           LTO= \
+          USE_LD=bfd \
           LIBS="-lc++_shared -lm"
 
     - name: Upload Artifact
