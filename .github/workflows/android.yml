@@ -21,10 +21,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y make build-essential
 
-    - name: Patch Types Header for Android
+    - name: Patch Types Header and Makefile for Android
       run: |
         # Replace std::aligned_alloc with posix_memalign safely in types.h
         sed -i 's|std::aligned_alloc(alignment,size)|({ void* ptr=nullptr; posix_memalign(\&ptr, alignment, size); ptr; })|g' src/types.h
+        
+        # Remove hardcoded -fuse-ld=gold from the Makefile to use the NDK's default LLVM linker safely
+        sed -i 's|-fuse-ld=gold||g' src/Makefile
 
     - name: Compile Arasan for Android (ARM64)
       run: |
@@ -32,11 +35,9 @@ jobs:
         make -j$(nproc) \
           CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang" \
           CXX="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" \
-          LD="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" \
           ARCH=aarch64 \
           BUILD_TYPE=neon \
           LTO= \
-          USE_LD=bfd \
           LIBS="-lc++_shared -lm"
 
     - name: Upload Artifact
