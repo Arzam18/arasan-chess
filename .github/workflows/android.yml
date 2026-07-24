@@ -30,7 +30,7 @@ jobs:
         sed -i 's|-fuse-ld=gold||g' src/Makefile
         sed -i 's|-lpthread||g' src/Makefile
 
-    - name: Compile Arasan for Android (ARM64)
+    - name: Compile Arasan for Android (ARM64 - Statically Linked)
       run: |
         cd src
         rm -rf ../bin/* ../build/*
@@ -41,7 +41,7 @@ jobs:
           ARCH=aarch64 \
           BUILD_TYPE=neon \
           LTO= \
-          LIBS="-lc++_shared -lm"
+          LIBS="-static-libstdc++ -lm"
           
         # Strip debugging symbols to optimize final executable size
         "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" ../bin/arasanx-*
