@@ -38,7 +38,8 @@ jobs:
           ARCH=aarch64 \
           BUILD_TYPE=neon \
           LTO= \
-          LIBS="-lc++_shared -lm"
+          LIBS="-lc++_shared -lm" \
+          SYSLIBS="-lc++_shared -lm"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
