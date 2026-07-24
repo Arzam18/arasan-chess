@@ -19,6 +19,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y make build-essential
 
+    - name: Patch Types Header for Android
+      run: |
+        # Replace std::aligned_alloc with posix_memalign safely in types.h
+        sed -i 's|std::aligned_alloc(alignment,size)|({ void* ptr=nullptr; posix_memalign(\&ptr, alignment, size); ptr; })|g' src/types.h
+
     - name: Compile Arasan for Android (ARM64)
       run: |
         cd src
@@ -27,8 +32,7 @@ jobs:
           CXX="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" \
           ARCH=aarch64 \
           BUILD_TYPE=neon \
-          LIBS="-lc++_shared -lm" \
-          CXXFLAGS='-DALIGNED_MALLOC(a,s)=({void* p=nullptr; posix_memalign(&p,a,s); p;})'
+          LIBS="-lc++_shared -lm"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
