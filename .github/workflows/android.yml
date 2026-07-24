@@ -28,7 +28,7 @@ jobs:
           ARCH=aarch64 \
           BUILD_TYPE=neon \
           LIBS="-lc++_shared -lm" \
-          CXXFLAGS="-D_LIBCPP_HAS_NO_ALIGNED_ALLOC=1"
+          CXXFLAGS='-DALIGNED_MALLOC(a,s)=({void* p=nullptr; posix_memalign(&p,a,s); p;})'
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
