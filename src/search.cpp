@@ -38,13 +38,17 @@ static constexpr int ASPIRATION_WINDOW_STEPS = 6;
 TUNABLE(IID_DEPTH_NON_PV, 6*DEPTH_INCREMENT, 4*DEPTH_INCREMENT, 10*DEPTH_INCREMENT);
 TUNABLE(IID_DEPTH_PV, 8*DEPTH_INCREMENT, 4*DEPTH_INCREMENT, 10*DEPTH_INCREMENT);
 TUNABLE(FUTILITY_DEPTH, 8*DEPTH_INCREMENT, 4*DEPTH_INCREMENT, 10*DEPTH_INCREMENT);
-TUNABLE(FUTILITY_HISTORY_THRESHOLD_IMP, 1000, 500, 4000);
-TUNABLE(FUTILITY_HISTORY_THRESHOLD_NON_IMP, 2000, 500, 4000);
+TUNABLE(FUTILITY_HISTORY_THRESHOLD_IMP, 1909, 1000, 8000);
+TUNABLE(FUTILITY_HISTORY_THRESHOLD_NON_IMP, 4100, 1000, 8000);
 TUNABLE(CAPTURE_FUTILITY_DEPTH, 5*DEPTH_INCREMENT, 3*DEPTH_INCREMENT, 8*DEPTH_INCREMENT);
-TUNABLE(CAPTURE_FUTILITY_HISTORY_DIVISOR, 65, 20, 200);
-TUNABLE(HISTORY_PRUNING_THRESHOLD_IMP, -250, -1000, 0);
-TUNABLE(HISTORY_PRUNING_THRESHOLD_NON_IMP, -250, -1000, 0);
-TUNABLE(HISTORY_REDUCTION_DIVISOR, 2200, 500, 4000);
+TUNABLE(CAPTURE_FUTILITY_HISTORY_DIVISOR, 125, 40, 400);
+TUNABLE(HISTORY_PRUNING_DEPTH, 6*DEPTH_INCREMENT, 2*DEPTH_INCREMENT, 10*DEPTH_INCREMENT);
+TUNABLE(HISTORY_PRUNING_SLOPE_IMP, -5496, -6000, -1000);
+TUNABLE(HISTORY_PRUNING_SLOPE2_IMP, -52, -300, 0);
+TUNABLE(HISTORY_PRUNING_SLOPE_NON_IMP, -5547, -6000, -100);
+TUNABLE(HISTORY_PRUNING_SLOPE2_NON_IMP, -12, -300, 0);
+TUNABLE(HISTORY_REDUCTION_DIVISOR, 3223, 1000, 12000);
+TUNABLE(CAPTURE_HISTORY_REDUCTION_DIVISOR, 5083, 1000, 12000);
 #ifdef RAZORING
 TUNABLE(RAZOR_DEPTH, DEPTH_INCREMENT, 0, 2*DEPTH_INCREMENT);
 #endif
@@ -65,11 +69,20 @@ TUNABLE(SINGULAR_EXTENSION_TRIPLE, static_cast<int>(0.33*Scoring::PAWN_VALUE), 0
 TUNABLE(PROBCUT_DEPTH, 5*DEPTH_INCREMENT, 3*DEPTH_INCREMENT, 8*DEPTH_INCREMENT);
 TUNABLE(PROBCUT_MARGIN, static_cast<int>(1.25*Scoring::PAWN_VALUE), static_cast<int>(0.75*Scoring::PAWN_VALUE),
         static_cast<int>(1.75*Scoring::PAWN_VALUE));
-TUNABLE(LMR_DEPTH, 3*DEPTH_INCREMENT, DEPTH_INCREMENT, 4*DEPTH_INCREMENT);
-TUNABLE(LMR_BASE_NON_PV, 50, 0, 100);
-TUNABLE(LMR_BASE_PV, 30, 0, 100);
-TUNABLE(LMR_DIV_NON_PV, 180, 100, 360);
-TUNABLE(LMR_DIV_PV, 225, 100, 360);
+TUNABLE(LMR_DEPTH, 5*DEPTH_INCREMENT/2, DEPTH_INCREMENT, 4*DEPTH_INCREMENT);
+TUNABLE(LMR_BASE_NON_PV, 54, 0, 100);
+TUNABLE(LMR_BASE_PV, 1, 0, 100);
+TUNABLE(LMR_DIV_NON_PV, 238, 100, 360);
+TUNABLE(LMR_DIV_PV, 244, 100, 360);
+static constexpr int LMR_RESOLUTION = 256;
+TUNABLE(LMR_NONQUIET,411,0,2*LMR_RESOLUTION);
+TUNABLE(LMR_NONPV,277,0,2*LMR_RESOLUTION);
+TUNABLE(LMR_NONIMPROVING,290,0,2*LMR_RESOLUTION);
+TUNABLE(LMR_CUTNODE,791,0,4*LMR_RESOLUTION);
+TUNABLE(LMR_TTCAPTURE,122,0,4*LMR_RESOLUTION);
+TUNABLE(LMR_KILLER,228,0,2*LMR_RESOLUTION);
+TUNABLE(LMR_HISTORY,363,0,2*LMR_RESOLUTION);
+TUNABLE(LMR_HISTORY_NONQUIET,411,0,2*LMR_RESOLUTION);
 TUNABLE(NULL_MOVE_BASE_REDUCTION, 3, 3, 4);
 TUNABLE(NULL_MOVE_DEPTH_DIVISOR, 3, 3, 6);
 TUNABLE(NULL_MOVE_LOW_MAT_EXTENSION, 1, 0, 3);
@@ -113,9 +126,11 @@ TUNABLE(RAZOR_MARGIN_SLOPE, static_cast<score_t>(1.25*Scoring::PAWN_VALUE),
         static_cast<int>(0.75*Scoring::PAWN_VALUE),
         static_cast<int>(2.0*Scoring::PAWN_VALUE));
 #endif
-TUNABLE(FUTILITY_MARGIN_BASE, static_cast<int>(0.04*Scoring::PAWN_VALUE), 0,
+TUNABLE(FUTILITY_MARGIN_BASE, static_cast<int>(0.45*Scoring::PAWN_VALUE), 0,
         static_cast<int>(1.0*Scoring::PAWN_VALUE));
-TUNABLE(FUTILITY_MARGIN_SLOPE, static_cast<int>(0.90*Scoring::PAWN_VALUE),
+TUNABLE(FUTILITY_MARGIN_MIN, static_cast<int>(0.45*Scoring::PAWN_VALUE), 0,
+        static_cast<int>(1.0*Scoring::PAWN_VALUE));
+TUNABLE(FUTILITY_MARGIN_SLOPE, static_cast<int>(0.85*Scoring::PAWN_VALUE),
         static_cast<int>(0.5*Scoring::PAWN_VALUE),
         static_cast<int>(1.5*Scoring::PAWN_VALUE));
 TUNABLE(CAPTURE_FUTILITY_MARGIN_BASE, static_cast<int>(1.66*Scoring::PAWN_VALUE),
@@ -145,8 +160,13 @@ static inline int futilityHistoryThreshold(bool improving) {
     return improving ? FUTILITY_HISTORY_THRESHOLD_IMP : FUTILITY_HISTORY_THRESHOLD_NON_IMP;
 }
 
-static inline int historyPruningThreshold(bool improving) {
-    return improving ? HISTORY_PRUNING_THRESHOLD_IMP : HISTORY_PRUNING_THRESHOLD_NON_IMP;
+static inline int historyPruningThreshold(int depth, bool improving) {
+    int d = std::max<int>(1,depth/DEPTH_INCREMENT);
+    if (improving) {
+        return d * HISTORY_PRUNING_SLOPE_IMP * d + HISTORY_PRUNING_SLOPE2_IMP * d * d;
+    } else {
+        return d * HISTORY_PRUNING_SLOPE_NON_IMP * d + HISTORY_PRUNING_SLOPE2_NON_IMP * d * d;
+    }
 }
 
 // global vars are updated only once this many nodes (to minimize
@@ -1039,12 +1059,17 @@ score_t Search::tbScoreAdjust(const Board &b,
 #endif
 
 template <bool quiet>
-static score_t futilityMargin(int depth)
+static score_t futilityMargin(int depth, int improving, int opponentWorsening)
 {
-    if (quiet)
-      return FUTILITY_MARGIN_BASE + std::max<int>(depth/DEPTH_INCREMENT,1)*FUTILITY_MARGIN_SLOPE;
-    else
-      return CAPTURE_FUTILITY_MARGIN_BASE + (depth/DEPTH_INCREMENT)*CAPTURE_FUTILITY_MARGIN_SLOPE;
+    const int d = std::max<int>(depth/DEPTH_INCREMENT,1);
+    if (quiet) {
+        // formula similar to Stockfish 18
+        int mult = std::max<int>(FUTILITY_MARGIN_SLOPE, FUTILITY_MARGIN_BASE + d * 4);
+        return std::max<int>(FUTILITY_MARGIN_MIN,mult * d - (3*128*improving - (128/3)*opponentWorsening)/128);
+    }
+    else {
+       return CAPTURE_FUTILITY_MARGIN_BASE + d * CAPTURE_FUTILITY_MARGIN_SLOPE;
+    }
 }
 
 #ifdef STATIC_NULL_PRUNING
@@ -1589,7 +1614,7 @@ score_t Search::ply0_search(RootMoveGenerator &mg, score_t alpha, score_t beta,
         // calculate extensions/reductions. No pruning at ply 0.
         int extension = extend(board, node, in_check_after_move, move);
         int newDepth = depth - DEPTH_INCREMENT + extension;
-        int reduction = reduce(board, node, node->num_legal, 1, newDepth, move);
+        int reduction = reduce(board, node, node->num_legal, 1, true, NullMove, newDepth, move);
 #ifdef SEARCH_STATS
         if (reduction) ++stats.reduced;
 #endif
@@ -2038,8 +2063,10 @@ score_t Search::quiesce(int ply,int depth)
    stats.hash_searches++;
 #endif
    bool hashHit = (result != HashEntry::NoHit);
+   bool ttPv = node->PV();
    if (hashHit) {
       // a valid hashtable entry was found
+      ttPv |= hashEntry.wasPv();
 #ifdef SEARCH_STATS
       stats.hash_hits++;
 #endif
@@ -2231,7 +2258,7 @@ score_t Search::quiesce(int ply,int depth)
                                                    HashEntry::Eval,
                                                    HashEntry::scoreToHashValue(node->best_score,node->ply),
                                                    node->staticEval,
-                                                   0,
+                                                   ttPv ? HashEntry::PV_MASK : 0,
                                                    hashMove);
                }
                return node->eval;
@@ -2343,7 +2370,7 @@ score_t Search::quiesce(int ply,int depth)
        val_type = HashEntry::Valid;
    controller->hashTable.storeHash(hash, QSEARCH_DEPTH, age, val_type,
                                    HashEntry::scoreToHashValue(node->best_score, node->ply),
-                                   node->staticEval, val_type, hashMove);
+                                   node->staticEval, 0, hashMove);
    if (node->inBounds(node->best_score)) {
        if (!IsNull(node->best)) {
            updatePV(board,node->best,ply);
@@ -2357,21 +2384,22 @@ bool Search::prune(const Board &b,
                    CheckStatusType in_check_after_move,
                    int moveIndex,
                    int improving,
+                   int opponentWorsening,
                    Move m) {
     assert(n->ply > 0);
     if (n->num_legal &&
         b.checkStatus() == NotInCheck &&
         b.getMaterial(b.sideToMove()).hasPieces() &&
-        n->best_score > -Constants::MATE_RANGE) {
+        n->best_score > -Constants::TABLEBASE_WIN) {
         const bool quiet = !CaptureOrPromotion(m) && in_check_after_move != InCheck;
+        const bool killer = GetPhase(m) < MoveGenerator::HISTORY_PHASE;
         int depth = n->depth;
         // for pruning decisions, use modified depth but not the same as
         // regular reduced search depth (idea from Laser)
         const int pruneDepth = quiet ? depth - lmr(n,depth,moveIndex) : depth;
         if (quiet) {
             // do not use pruneDepth for LMP
-            if (GetPhase(m) >= MoveGenerator::HISTORY_PHASE &&
-                moveIndex > lmpCount(depth,improving)) {
+            if (!killer && moveIndex > lmpCount(depth,improving)) {
 #ifdef SEARCH_STATS
                 ++stats.lmp;
 #endif
@@ -2382,11 +2410,9 @@ bool Search::prune(const Board &b,
 #endif
                 return true;
             }
-            // History pruning.
             const int hist = context.historyScore(m, n, board.sideToMove());
-            if (pruneDepth <= (3-improving)*DEPTH_INCREMENT &&
-                context.getCmHistory(n,m) < historyPruningThreshold(improving) &&
-                context.getFuHistory(n,m) < historyPruningThreshold(improving)) {
+            // History pruning.
+            if (depth <= HISTORY_PRUNING_DEPTH && hist < historyPruningThreshold(depth, improving)) {
 #ifdef SEARCH_TRACE
                 if (mainThread()) {
                     indent(n->ply); std::cout << "history: pruned" << std::endl;
@@ -2402,7 +2428,7 @@ bool Search::prune(const Board &b,
             if (pruneDepth <= FUTILITY_DEPTH && hist < futilityHistoryThreshold(improving)) {
                 // Threshold was formerly increased with the move index
                 // but this tests worse now.
-                score_t threshold = n->alpha - futilityMargin<true>(pruneDepth);
+                score_t threshold = n->alpha - futilityMargin<true>(pruneDepth, improving, opponentWorsening);
                 if (n->eval == Constants::INVALID_SCORE) {
                     n->eval = n->staticEval = evalu8(b);
                 }
@@ -2421,7 +2447,7 @@ bool Search::prune(const Board &b,
         } else {
             if (pruneDepth <= CAPTURE_FUTILITY_DEPTH) {
                 assert(n->eval != Constants::INVALID_SCORE);
-                score_t margin = futilityMargin<false>(pruneDepth) +
+                score_t margin = futilityMargin<false>(pruneDepth, improving, opponentWorsening) +
                     Scoring::maxValue(m) +
                     context.captureHistoryScore(b, m) / CAPTURE_FUTILITY_HISTORY_DIVISOR;
                 if (n->eval + margin < node->alpha) {
@@ -2492,6 +2518,8 @@ int Search::reduce(const Board &b,
                    NodeInfo *n,
                    int moveIndex,
                    int improving,
+                   bool ttPv,
+                   Move hashMove,
                    int newDepth,
                    Move move) {
     int depth = n->depth;
@@ -2499,30 +2527,46 @@ int Search::reduce(const Board &b,
     const bool quiet = !CaptureOrPromotion(move);
 
     // See if we do late move reduction.
-    if (depth >= LMR_DEPTH && moveIndex >= 1+2*n->PV() && (quiet|| moveIndex > lmpCount(depth,improving))) {
-        reduction += lmr(n,depth,moveIndex);
+    if (depth >= LMR_DEPTH && moveIndex >= 1) {
+        reduction += LMR_RESOLUTION * lmr(n,depth,moveIndex);
         if (!quiet) {
-            reduction -= DEPTH_INCREMENT;
+            reduction -= LMR_NONQUIET;
         }
-        else {
-            if (!n->PV() && !improving) {
-                reduction += DEPTH_INCREMENT;
+        if (!ttPv) {
+            reduction += LMR_NONPV;
+        }
+        if (!improving) {
+            reduction += LMR_NONIMPROVING;
+        }
+        if (node->cutNode()) {
+            reduction += LMR_CUTNODE;
+        }
+        if (CaptureOrPromotion(hashMove)) {
+            reduction += LMR_TTCAPTURE;
+        }
+        if (n->ply > 0) {
+            if (b.checkStatus() != InCheck && GetPhase(move) < MoveGenerator::HISTORY_PHASE) {
+                // killer or refutation move
+                reduction -= LMR_KILLER;
             }
-            if (n->ply > 0) {
-                if (b.checkStatus() != InCheck && GetPhase(move) < MoveGenerator::HISTORY_PHASE) {
-                    // killer or refutation move
-                    reduction -= DEPTH_INCREMENT;
-                }
-                // reduce less for good history
-                reduction -= std::max<int>(
-                    -2 * DEPTH_INCREMENT,
-                    std::min<int>(2 * DEPTH_INCREMENT,
-                                  DEPTH_INCREMENT *
-                                      context.historyScore(move, n, board.sideToMove()) / HISTORY_REDUCTION_DIVISOR));
+            // reduce less for good history
+            if (quiet) {
+                reduction -= LMR_HISTORY * std::max<int>(
+                                                     -2 * DEPTH_INCREMENT,
+                                                     std::min<int>(2 * DEPTH_INCREMENT,
+                                                                   DEPTH_INCREMENT *
+                                                                   context.historyScore(move, n, board.sideToMove()) / HISTORY_REDUCTION_DIVISOR));
             }
+            else
+                reduction -= LMR_HISTORY_NONQUIET * std::max<int>(
+                                                     -2 * DEPTH_INCREMENT,
+                                                     std::min<int>(2 * DEPTH_INCREMENT,
+                                                                   DEPTH_INCREMENT *
+                                                                   context.captureHistoryScore(board, move) / CAPTURE_HISTORY_REDUCTION_DIVISOR));
         }
     }
-    int r = std::min<int>(newDepth - DEPTH_INCREMENT,reduction);
+    // do not allow negative reduction
+    int r = std::clamp<int>(newDepth - DEPTH_INCREMENT,0,reduction/LMR_RESOLUTION);
     return r < DEPTH_INCREMENT ? 0 : r;
 }
 
@@ -2607,6 +2651,7 @@ score_t Search::search()
     HashEntry hashEntry;
     HashEntry::ValueType result;
     bool hashHit = false;
+    bool ttPv = node->PV();
     score_t hashValue = Constants::INVALID_SCORE;
     if ((node->flags & IID) || !IsNull(node->excluded)) {
        result = HashEntry::NoHit;
@@ -2642,6 +2687,7 @@ score_t Search::search()
         // Note: hash move may be usable even if score is not usable
         hashMove = hashEntry.bestMove(board);
         if (result == HashEntry::Valid) {
+          ttPv |= hashEntry.wasPv();
           if (node->inBounds(hashValue)) {
               // parent node will consider this a new best line
               hashMove = hashEntry.bestMove(board);
@@ -2716,7 +2762,7 @@ score_t Search::search()
                 HashEntry::Valid,
                 HashEntry::scoreToHashValue(tb_score,node->ply),
                 Constants::INVALID_SCORE,
-                HashEntry::TB_MASK,
+                HashEntry::TB_MASK | (ttPv ? HashEntry::PV_MASK : 0),
                 NullMove);
             node->best_score = tb_score;               // unadjusted score
             node->flags |= EXACT;
@@ -2768,13 +2814,17 @@ score_t Search::search()
     assert(node->staticEval != Constants::INVALID_SCORE);
 
     // pre-search pruning conditions
-    const bool pruneOk = !in_check &&
+    const bool preSearchPruneOk = !in_check &&
         !node->PV() &&
         !(node->flags & (VERIFY|IID));
 
-    const int improving = ply >= 3 && !in_check &&
+    const int improving = ply >= 2 && !in_check &&
         (node-2)->staticEval != Constants::INVALID_SCORE &&
         (node->staticEval >= (node-2)->staticEval);
+
+    const int opponentWorsening = ply >= 1 &&
+        (node-1)->staticEval != Constants::INVALID_SCORE &&
+        (node->staticEval >= -(node-1)->staticEval);
 
     // Reset killer moves for children (idea from Ethereal)
     context.clearKillers(node->ply+1);
@@ -2783,7 +2833,7 @@ score_t Search::search()
     // Static null pruning, aka reverse futility pruning,
     // as in Protector, Texel, etc. Positions with very good
     // eval are pruned.
-    if (pruneOk && depth <= STATIC_NULL_PRUNING_DEPTH && node->eval < Constants::TABLEBASE_WIN) {
+    if (preSearchPruneOk && depth <= STATIC_NULL_PRUNING_DEPTH && node->eval < Constants::TABLEBASE_WIN) {
         const score_t margin = staticNullPruningMargin(depth, improving);
         assert(node->eval != Constants::INVALID_SCORE);
         if (node->eval >= node->beta + margin) {
@@ -2802,7 +2852,7 @@ score_t Search::search()
 
 #ifdef RAZORING
     // razoring as in Stockfish
-    if (pruneOk && depth <= RAZOR_DEPTH && board.getMaterial(board.sideToMove()).hasPieces()) {
+    if (preSearchPruneOk && depth <= RAZOR_DEPTH && board.getMaterial(board.sideToMove()).hasPieces()) {
         assert(node->eval != Constants::INVALID_SCORE);
         if (node->eval < node->beta - razorMargin(depth)) {
             clearNNUEState(node);
@@ -2826,7 +2876,7 @@ score_t Search::search()
     // zugzwang is a possibility. Do not do null move if this is an
     // IID search, because it will only help us get a cutoff, not a move.
     // Also avoid null move near the 50-move draw limit.
-    if (pruneOk &&
+    if (preSearchPruneOk &&
         (depth >= 2*DEPTH_INCREMENT) &&
         !IsNull((node-1)->last_move) &&
         (depth >= 4*DEPTH_INCREMENT || !CaptureOrPromotion((node-1)->last_move)) &&
@@ -3002,7 +3052,7 @@ score_t Search::search()
                                                             HashEntry::LowerBound,
                                                             HashEntry::scoreToHashValue(value,node->ply),
                                                             node->staticEval,
-                                                            0,
+                                                            ttPv ? HashEntry::PV_MASK : 0,
                                                             move);
                         }
                         return value;
@@ -3153,7 +3203,7 @@ score_t Search::search()
                     // this condition holds
                     singularExtension = -2 * DEPTH_INCREMENT;
                 }
-                else if (node->nodeType == CutNode) {
+                else if (node->cutNode()) {
                     // Yet another type of reduction, as in Stockfish
                     singularExtension = -2 * DEPTH_INCREMENT;
                 }
@@ -3216,12 +3266,13 @@ score_t Search::search()
 #endif
             }
             else {
-                if (pruneOk && prune(board, node, in_check_after_move, move_index, improving, move)) {
+                if (prune(board, node, in_check_after_move, move_index, improving,
+                          opponentWorsening, move)) {
                     continue;
                 }
                 extension = extend(board, node, in_check_after_move, move);
                 newDepth += extension;
-                reduction = reduce(board, node, node->num_legal, improving, newDepth, move);
+                reduction = reduce(board, node, node->num_legal, improving, ttPv, hashMove, newDepth, move);
             }
             board.doMove(move,node);
             if (!board.wasLegal(move,in_check)) {
@@ -3430,7 +3481,7 @@ score_t Search::search()
                                         val_type,
                                         HashEntry::scoreToHashValue(value,node->ply),
                                         node->staticEval,
-                                        0,
+                                        ttPv ? HashEntry::PV_MASK : 0,
                                         node->best);
     }
     search_end2:
