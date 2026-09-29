@@ -1,8 +1,9 @@
-// Copyright 2013-2019, 2021-2025 by Jon Dart.  All Rights Reserved.
+// Copyright 2013-2019, 2021-2026 by Jon Dart.  All Rights Reserved.
 
 // Unit tests for Arasan
 
 #include "board.h"
+#include "bhash.h"
 #include "boardio.h"
 #include "legal.h"
 #include "movegen.h"
@@ -271,8 +272,10 @@ static int testNotation() {
     }
     // Verify e.p. square is set correctly
     Board board;
-    std::stringstream s(notationData[15].fen);
-    s >> board;
+    if (!BoardIO::readFEN(board, notationData[15].fen)) {
+        std::cerr << "notation: error in FEN: " << notationData[15].fen << std::endl;
+        return ++errs;
+    }
     if (board.enPassantSq() != B5) {
         std::cerr << "notation: error in case 17" << std::endl;
         ++errs;
@@ -283,8 +286,10 @@ static int testNotation() {
         std::cerr << "notation: error in case 18" << std::endl;
         ++errs;
     }
-    std::stringstream s3(notationData[16].fen);
-    s3 >> board;
+    if (!BoardIO::readFEN(board, notationData[16].fen)) {
+        std::cerr << "notation: error in FEN: " << notationData[16].fen << std::endl;
+        return ++errs;
+    }
     if (board.enPassantSq() != G4) {
         std::cerr << "notation: error in case 19" << std::endl;
         ++errs;
@@ -299,6 +304,7 @@ static int testNotation() {
     board.flip();
     if (board.enPassantSq() != G5) {
         std::cout << "notation: error in case 21" << std::endl;
+        ++errs;
     }
     int casenum = 22;
     // Test WB and UCI formats
@@ -371,6 +377,65 @@ static int testNotation() {
             ++errs;
         }
         ++casenum;
+    }
+    // Verify invalid FENs are rejected and do not modify the board
+    const std::string validFen = "r3k2r/ppqnbp1b/2n1p2p/2ppP1p1/8/P2P1NPP/1PP1QPB1/R1B1RNK1 b kq -";
+    if (!BoardIO::readFEN(board, validFen)) {
+        std::cerr << "notation: error in FEN: " << validFen << std::endl;
+        return ++errs;
+    }
+    std::stringstream before;
+    before << board;
+    const hash_t beforeHash = board.hashCode();
+    const std::string invalidFens[] = {
+        // incorrect castling status
+        "R3k2r/1b1nbppp/4pn2/1pq5/8/2P1NN2/1P2BPPP/2BQ1RK1 b kq - 0 1", // Black Q-side: no rook
+        "r3k1r1/ppqnbp1b/2n1p2p/2ppP1p1/8/P2P1NPP/1PP1QPB1/R1B1RNK1 b k -", // Black K-side: no rook
+        "r3k2r/ppqnbp1b/2n1p2p/2ppP1p1/8/P2P1NPP/1PP1QPB1/R1B1RNK1 b Qkq -", // White Q-side: king moved
+        "r2qkb1r/1p3pp1/p1bppn1p/8/4P3/2NB1Q2/PPPB1PPP/1R2K2R w KQkq -", // White Q-side: no rook
+        "r2qkb1r/1p3pp1/p1bppn1p/8/4P3/2NB1Q2/PPPB1PPP/R3K1R1 w KQkq -", // White K-side: no rook
+        "r2qkb1r/1p3pp1/p1bppn1p/8/4P3/2NB1Q2/PPPB1PPP/R3K2R w KQkx -", // invalid character
+        // missing fields
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR",
+        // other malformed FENs
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR x KQkq -",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNX w KQkq -",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w kq -", // no White king
+        // too many squares in a rank
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNRR w KQkq -",
+        // too few squares in a rank
+        "rnbqkbnr/pppppppp/7/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
+        // invalid e.p. square
+        "rnbqkbnr/pppp1ppp/8/8/3Pp3/8/PPP1PPPP/RNBQKBNR b KQkq e9",
+        "rnbqkbnr/pppp1ppp/8/8/3Pp3/8/PPP1PPPP/RNBQKBNR b KQkq i3",
+        "rnbqkbnr/pppp1ppp/8/8/3Pp3/8/PPP1PPPP/RNBQKBNR b KQkq d"};
+    for (const std::string &fen : invalidFens) {
+        if (BoardIO::readFEN(board, fen)) {
+            std::cout << "notation: error in case " << casenum << ": invalid FEN accepted: " << fen
+                      << std::endl;
+            ++errs;
+        }
+        std::stringstream after;
+        after << board;
+        if (after.str() != before.str() || board.hashCode() != beforeHash) {
+            std::cout << "notation: error in case " << casenum
+                      << ": board modified by invalid FEN: " << fen << std::endl;
+            ++errs;
+            // restore board for subsequent cases
+            BoardIO::readFEN(board, validFen);
+        }
+        ++casenum;
+    }
+    // Verify hash code is correct when e.p. square is set
+    if (!BoardIO::readFEN(board, notationData[16].fen)) {
+        std::cerr << "notation: error in FEN: " << notationData[16].fen << std::endl;
+        return ++errs;
+    }
+    if (board.hashCode() != BoardHash::hashCode(board)) {
+        std::cout << "notation: error in case " << casenum << ": incorrect hash code" << std::endl;
+        ++errs;
     }
     return errs;
 
@@ -460,6 +525,36 @@ static int testPGN() {
       return errs;
 }
 
+static int testPGNStore() {
+    int errs = 0;
+
+    // 1. e4 e5 (1... c5 2. Nf3 $1) 2. Nf3 {developing} Nc6
+    std::vector<ChessIO::MoveNode> moves;
+    moves.push_back(ChessIO::MoveNode{"e4", {}, "", {}});
+    ChessIO::MoveNode e5{"e5", {}, "", {}};
+    e5.variations.push_back(
+        {ChessIO::MoveNode{"c5", {}, "", {}}, ChessIO::MoveNode{"Nf3", {"$1"}, "", {}}});
+    moves.push_back(e5);
+    moves.push_back(ChessIO::MoveNode{"Nf3", {}, "developing", {}});
+    moves.push_back(ChessIO::MoveNode{"Nc6", {}, "", {}});
+
+    std::vector<ChessIO::Header> hdrs;
+    hdrs.push_back(ChessIO::Header("Event", "Test"));
+    hdrs.push_back(ChessIO::Header("Result", "*"));
+
+    std::ostringstream out;
+    ChessIO::store_pgn(out, moves, "*", hdrs);
+
+    static const std::string expected =
+        "[Event \"Test\"]\n[Result \"*\"]\n\n"
+        "1. e4 e5 (1... c5 2. Nf3 $1) 2. Nf3 {developing} Nc6 *\n\n";
+    if (out.str() != expected) {
+        ++errs;
+        std::cout << "PGN store test: unexpected output:" << std::endl << out.str() << std::endl;
+    }
+    return errs;
+}
+
 static int testEval() {
 
     struct Case {
@@ -480,7 +575,7 @@ static int testEval() {
              -15.0,-8.0),  // advanced passer
         Case("5B2/5p2/8/3b4/p7/P5KN/2nk4/8 b - -",0,3.0), // advanced passer, blocked
         // material imbalance
-        Case("8/6pk/5pb1/7p/Q6P/2r1N3/5PP1/6K1 w - -",4.0,10.0),
+        Case("8/6pk/5pb1/7p/Q6P/2r1N3/5PP1/6K1 w - -",9.0,13.0),
         // material imbalance
         Case("r4rk1/1bqnpp1p/pp1p1Bp1/8/P3P3/2N1pN1P/1PP1BPP1/R4RK1 w - -",-10.0,-4.0),
         Case("8/8/4bk2/8/8/4K3/4R3/8 w - -",-1.0,1.0), // even endgame
@@ -1765,6 +1860,7 @@ static int doUnit() {
    errs += testGetPinned();
    errs += testSee();
    errs += testPGN();
+   errs += testPGNStore();
    errs += testBitbases();
    errs += testDrawEval();
    errs += testCheckStatus();
