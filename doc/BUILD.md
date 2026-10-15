@@ -8,8 +8,9 @@ following other console programs:
 - ecococder - adds ECO codes to a PGN file
 - playchess - filters PGN games, removing those where end eval differs from result (and short games)
 - selfplay - generates positions for NNUE tuning
-- sortpgn - utility to sort PGN files by date and round
-- blundercheck - utility to blunder-check PGN files
+- sortpgn - sorts PGN files by date and round
+- blundercheck - blunder-checks PGN files
+- bulletstats - reports statistics for bullet format data files
 
 Following is a sketch of the Arasan source directory tree:
 
@@ -80,7 +81,7 @@ Supported instruction sets at present are:
 - modern (implies support for: POPCNT, SSSE3, SSE4.1)
 - avx2 (assumes availabiity of AVX2 instruction set, plus "modern" instructions)
 - avx2-bmi2 (assumes avaiability of AVX2 and BMI2 instruction sets, plus "modern" instructions)
-- avx512 (assumes AVX512, plus avaiability of AVX2 and BMI2 instruction sets, plus "modern" instructions)
+- avx512 (assumes AVX512, plus availability of AVX2 and BMI2 instruction sets, plus "modern" instructions)
 - neon (for ARM processors)
 
 The BUILD_TYPE variable can be used to specify the desired instruction
@@ -90,6 +91,8 @@ the utiliies, also. For example:
 make BUILD_TYPE=avx2 utils
 
 will build the utilities with AVX2 support.
+
+Note: AVX512 builds are optimized for an Intel Ice Lake or later processor, or a modern AMD processor.
 
 You can specify the compiler by passing the CC variable
 on the command line, and CXXFLAGS can also be used to pass additional
@@ -160,11 +163,13 @@ support. Current build types supported are:
 - modern (implies support for: POPCNT, SSSE3, SSE4.1)
 - avx2 (assumes availabiity of AVX2 instruction set, plus "modern" instructions)
 - avx2-bmi2 (assumes avaiability of AVX2 and BMI2 instruction sets, plus "modern" instructions)
-- avx512 (assumes AVX512, plus avaiability of AVX2 and BMI2 instruction sets, plus "modern" instructions)
+- avx512 (assumes AVX512, plus availability of AVX2 and BMI2 instruction sets, plus "modern" instructions)
 
 The default with no BUILD_TYPE set is a very generic executable that
 does not assume any advanced instruction set, but does assume SSE2,
 available on all x86 processors since about 2000.
+
+Note: AVX512 builds are optimized for an Intel Ice Lake or later processor, or a modern AMD processor.
 
 Release binaries from a build are placed in the
 "\<target>\Release" directory, where <target> is "win32" or "win64",

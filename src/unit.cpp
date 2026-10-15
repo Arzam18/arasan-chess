@@ -569,20 +569,18 @@ static int testEval() {
         Case("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
              -1.0,1.0), // start position
         Case("r1bq1rk1/p2nbppp/1pp1pn2/3p4/2PP1B2/5NP1/PPQ1PPBP/RN3RK1 w - -",-1.0,1.0), // even opening
-        Case("2q1r1k1/1r4b1/2p3p1/1pBpP1P1/p2P1P1Q/P3R2R/1P5K/8 b - -",
-             -8.0,-4.0), // King attack
-        Case("3r4/P4k2/7p/8/2P1p1Bp/1PKn4/R5P1/8 b - -",
-             -15.0,-8.0),  // advanced passer
         Case("5B2/5p2/8/3b4/p7/P5KN/2nk4/8 b - -",0,3.0), // advanced passer, blocked
         // material imbalance
-        Case("8/6pk/5pb1/7p/Q6P/2r1N3/5PP1/6K1 w - -",9.0,13.0),
-        // material imbalance
         Case("r4rk1/1bqnpp1p/pp1p1Bp1/8/P3P3/2N1pN1P/1PP1BPP1/R4RK1 w - -",-10.0,-4.0),
+        // King attack
+        Case("r2r3k/pp2RQp1/7p/4B3/6q1/3P1N2/PP2K2P/R7 w - -",10.0,Constants::MATE),
         Case("8/8/4bk2/8/8/4K3/4R3/8 w - -",-1.0,1.0), // even endgame
-        Case("8/3BK3/8/7P/8/2b1k3/8/8 w - -",-0.5,0.5) // even endgame
+        Case("8/3BK3/8/7P/8/2b1k3/8/8 w - -",-0.1,0.1), // even endgame
+        Case("8/3k4/7p/3P4/4K3/7P/8/8 b - -",-Constants::MATE,-5.0), // lost endgame
+        Case("8/p7/P2k2p1/7p/4K2P/6P1/5P2/8 b - -",-Constants::MATE,-5.0), // lost endgame
     };
 
-    int i = 0, errs = 0;
+    int i = 1, errs = 0;
     auto check =
         [&errs, &i](score_t eval, double minEval, double maxEval, const std::string &txt) {
             double eval1 = static_cast<double>(eval)/Scoring::PAWN_VALUE;
@@ -1212,11 +1210,11 @@ static int testMoveGen()
           };
     };
 
-    static const std::array<Case,8> cases = { Case("rn1rb2k/1p2q3/p2NpB1p/1Pb5/P5Q1/5N2/5PPP/3R1RK1 b - - 0 25",
-                                                   "Qxf6 Qg7 Kh7",
-                                                   "Qxf6 Qg7 Kh7",
-                                                   "Qxf6 Qg7 Kh7",
-                                                   "Qxf6 Qg7 Kh7"),
+    static const std::list<Case> cases = { Case("rn1rb2k/1p2q3/p2NpB1p/1Pb5/P5Q1/5N2/5PPP/3R1RK1 b - - 0 25",
+                                                "Qxf6 Qg7 Kh7",
+                                                "Qxf6 Qg7 Kh7",
+                                                "Qxf6 Qg7 Kh7",
+                                                "Qxf6 Qg7 Kh7"),
         Case("3k4/3p4/8/r7/K7/8/8/8 w - - 0 3",
              "Kxa5 Kb4 Kb3",
              "Kxa5 Kb4 Kb3",
@@ -1247,18 +1245,13 @@ static int testMoveGen()
              "Kf6 Kf7 Kh7 Kf8 Kg8 Kh8 Qc7 Qe7 Qb8 Qf8 Qc6 Qe6 Qf6 Qg6 Qd7 Qd8 Ra1 Ra2 Ra3 Ra4 Ra5 Ra6 Rb7 Rc7 Rd7 Re7 Rf7 Ra8 e4+ b5 Qxd5 Kg6",
              "Qxd5",
              "Qxd5 e4+"),
-        Case("1r2r3/8/4pP1B/ppp2p1R/n4k2/5B1P/P3PP2/6K1 b - - 0 33","Ke5","Ke5","Ke5","Ke5")
+        Case("1r2r3/8/4pP1B/ppp2p1R/n4k2/5B1P/P3PP2/6K1 b - - 0 33","Ke5","Ke5","Ke5","Ke5"),
+        Case("2kR4/p1N1bp1p/qp2n1pP/6P1/1P2rPQ1/P7/1B3KB1/R7 b - - 0 26","Kxd8 Kxc7 Kb7 Bxd8","Kxd8 Kxc7 Kb7 Bxd8","Kxd8 Kxc7 Kb7 Bxd8",
+             "Kxd8 Kxc7 Kb7 Bxd8")
     };
 
-    struct MoveKey
-    {
-        MoveKey(const Move &m) :
-            move(m),generated(false)
-            {
-            }
-        Move move;
-        bool generated;
-    };
+    // clear the flags and phase bytes: these are not compared
+    auto moveKey = [] (Move m) -> Move { return m & 0xffffffffffffULL; };
 
     int errs = 0;
     int casenum = 0;
@@ -1270,9 +1263,9 @@ static int testMoveGen()
             ++errs;
         }
         else {
-            std::array<std::vector<MoveKey>,4> expected;
+            std::array<std::set<Move>,4> expected;
 
-            auto parseMoves = [&casenum, &board, &errs] (const std::string &moves, std::vector<MoveKey> &out) {
+            auto parseMoves = [&casenum, &board, &errs, &moveKey] (const std::string &moves, std::set<Move> &out) {
                 std::stringstream s(moves);
                 while (!s.eof()) {
                     std::string movestr;
@@ -1282,7 +1275,7 @@ static int testMoveGen()
                         std::cerr << "testMoveGen: invalid result move, case " << casenum << " (" << movestr << ")" << std::endl;
                         ++errs;
                     } else {
-                        out.push_back(MoveKey(m));
+                        out.insert(moveKey(m));
                     }
                 }
             };
@@ -1290,11 +1283,8 @@ static int testMoveGen()
             for (int i = 0; i < 4; i++) {
                 parseMoves(c.moves[i],expected[i]);
             }
-            auto doMg = [&casenum, &board, &errs] (MoveGenerator &mg, std::vector<MoveKey> &correct, MgType type)
+            auto doMg = [&casenum, &board, &errs, &moveKey] (MoveGenerator &mg, const std::set<Move> &correct, MgType type)
                 {
-                    for (auto &x : correct) {
-                        x.generated = false;
-                    }
                     Move gen;
                     int order = 0;
                     static const std::string ids[4] = { "root", "standard", "qs_nochecks", "qs_checks"
@@ -1316,6 +1306,7 @@ static int testMoveGen()
                             num_moves += mg::generateChecks(board,moves+num_moves,disc);
                         }
                     }
+                    std::set<Move> allMoves;
                     for (;;) {
                         if (type == QsNoCheck || type == QsCheck) {
                             if (move_index >= num_moves) {
@@ -1331,33 +1322,30 @@ static int testMoveGen()
                             gen = mg.nextMove(order);
                         }
                         if (IsNull(gen)) break;
-                        auto it = std::find_if(correct.begin(), correct.end(),[&] (const MoveKey &m) -> int
-                                               {return MovesEqual(gen,m.move);});
-                        if (it == correct.end()) {
-                            std::cerr << "testMoveGen: unexpected result move, " << id << " case " << casenum << " (";
-                            MoveImage(gen,std::cerr);
-                            std::cerr << ")" << std::endl;
-                            ++errs;
-                        } else if (correct[it-correct.begin()].generated) {
+                        if (!allMoves.insert(moveKey(gen)).second) {
                             std::cerr << "testMoveGen: duplicate move: " << id << " case " << casenum << " (";
                             MoveImage(gen,std::cerr);
                             std::cerr << ")" << std::endl;
                             ++errs;
-                        } else {
-                            correct[it-correct.begin()].generated = true;
+                        }
+                        if (correct.find(moveKey(gen)) == correct.end()) {
+                            std::cerr << "testMoveGen: unexpected result move, " << id << " case " << casenum << " (";
+                            MoveImage(gen,std::cerr);
+                            std::cerr << ")" << std::endl;
+                            ++errs;
                         }
                     }
-                    auto err2 = std::find_if(correct.begin(),correct.end(),[](const MoveKey &r) {
-                            return !r.generated;});
-                    if (err2 != correct.end()) {
-                        std::stringstream mvlist;
-                        unsigned err_count = 0;
-                        for (;err2 != correct.end();err2++) {
+                    std::stringstream mvlist;
+                    unsigned err_count = 0;
+                    for (Move m : correct) {
+                        if (allMoves.find(m) == allMoves.end()) {
                             ++errs;
                             mvlist << ' ';
-                            Notation::image(board,err2->move,Notation::OutputFormat::SAN,mvlist);
+                            Notation::image(board,m,Notation::OutputFormat::SAN,mvlist);
                             ++err_count;
                         }
+                    }
+                    if (err_count) {
                         std::cerr << "testMoveGen: error in " << id << " case " << casenum << ": " << err_count << " expected move(s) not generated:" <<
                             mvlist.str() << std::endl;
                     }

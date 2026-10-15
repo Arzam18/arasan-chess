@@ -1,11 +1,11 @@
 [Setup]
 AppName=Arasan
-AppVerName=Arasan 26.0
-DefaultDirName={commonpf}\Arasan\26.0
-DefaultGroupName=Arasan 26.0
+AppVerName=Arasan 26.1
+DefaultDirName={commonpf}\Arasan\26.1
+DefaultGroupName=Arasan 26.1
 AppCopyright=Copyright 1994-2026 by Jon Dart. All Rights Reserved.
 Compression=bzip
-OutputBaseFilename=arasan32-v26.0
+OutputBaseFilename=arasan32-v26.1
 OutputDir=gui\install
 SourceDir=..\..
 UsePreviousAppDir=no
@@ -36,7 +36,7 @@ Source: "gui\help\arasan.chm"; DestDir: "{app}"; Components: GUI
 Source: "gui\pieces\*"; DestDir: "{app}\pieces"; Flags: recursesubdirs createallsubdirs; Components: GUI
 Source: "book\chess-openings\*"; DestDir: "{app}\chess-openings"; Components: GUI
 Source: "win32\release\arasanx-32.exe"; DestDir: "{app}"; Components: engine
-Source: "network\arasanv8-20260906.nnue"; DestDir: "{app}"; Components: engine
+Source: "network\arasanv8-20261005.nnue"; DestDir: "{app}"; Components: engine
 Source: "book\book.bin"; DestDir: "{app}"; Components: book
 Source: "LICENSE"; DestDir: "{app}\LICENSES"; Components: engine; DestName: "LICENSE.txt"
 Source: "gui\lunasvg\LICENSE"; DestDir: "{app}\LICENSES"; DestName: "LICENSE-lunasvg.txt"; Components: GUI;
