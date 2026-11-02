@@ -1,58 +1,87 @@
-name: Build Android
+name: Build Arasan Android ARM64
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "*" ]
   pull_request:
     branches: [ "*" ]
 
 jobs:
-  build-android:
+  build-android-arm64:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout source
+        uses: actions/checkout@v4
 
-    - name: Set up Build Environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y make build-essential
+      - name: Initialize engine tablebase dependency only
+        run: git submodule update --init --recursive -- src/syzygy
 
-    - name: Patch Types Header and Makefile for Android
-      run: |
-        # Replace std::aligned_alloc with posix_memalign safely in types.h
-        sed -i 's|std::aligned_alloc(alignment,size)|({ void* ptr=nullptr; posix_memalign(\&ptr, alignment, size); ptr; })|g' src/types.h
-        
-        # Remove hardcoded flags incompatible with Android's NDK LLVM toolchain
-        sed -i 's|-fuse-ld=gold||g' src/Makefile
-        sed -i 's|-lpthread||g' src/Makefile
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make gawk
 
-    - name: Compile Arasan for Android (ARM64 - Statically Linked)
-      run: |
-        cd src
-        rm -rf ../bin/* ../build/*
-        
-        make -j$(nproc) \
-          CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang" \
-          CXX="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" \
-          ARCH=aarch64 \
-          BUILD_TYPE=neon \
-          LTO= \
-          LIBS="-static-libstdc++ -lm"
-          
-        # Strip debugging symbols to optimize final executable size
-        "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" ../bin/arasanx-*
+      - name: Locate Android NDK
+        shell: bash
+        run: |
+          NDK_DIR="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
+          if [[ -z "$NDK_DIR" || ! -x "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" ]]; then
+            SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+            NDK_DIR="$(find "$SDK_DIR/ndk" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -n 1)"
+          fi
+          if [[ -z "$NDK_DIR" || ! -x "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" ]]; then
+            echo "Android NDK with the Linux x86_64 LLVM toolchain was not found." >&2
+            exit 1
+          fi
+          echo "ANDROID_NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"
+          echo "Using Android NDK: $NDK_DIR"
 
-    - name: Verify Binary Size
-      run: |
-        ls -lh bin/
-        find bin/ -type f -size -100k -exec echo "Error: Binary is too small!" \; -exec exit 1 \;
+      - name: Build Arasan engine (ARM64 NEON + Dotprod, API 24)
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: arasan-android-arm64
-        path: bin/arasanx-*
+          test -f src/syzygy/src/tbprobe.c || {
+            echo "Fathom/Syzygy submodule is missing." >&2
+            exit 1
+          }
+
+          rm -rf build bin profile prof_data
+
+          make -C src -j"$(nproc)" default \
+            CC="$TOOLCHAIN/aarch64-linux-android24-clang++" \
+            ARCH=aarch64 \
+            BUILD_TYPE=neon \
+            ARASAN_VERSION=26.1 \
+            NETWORK=arasanv9-20261023.nnue \
+            CXXFLAGS="-march=armv8.2-a+dotprod -mtune=cortex-a76" \
+            LDFLAGS="-fuse-ld=lld" \
+            LTO= \
+            CXXLIB="-static-libstdc++" \
+            LIBS="-lc -lm" \
+            SMPLIB=""
+
+          ENGINE="bin/arasanx-64-neon"
+          test -s "$ENGINE"
+          "$TOOLCHAIN/llvm-strip" --strip-unneeded "$ENGINE"
+
+          echo "--- Binary ---"
+          ls -lh "$ENGINE"
+          file "$ENGINE"
+          "$TOOLCHAIN/llvm-readelf" -h "$ENGINE"
+
+          "$TOOLCHAIN/llvm-readelf" -h "$ENGINE" | grep -q 'AArch64'
+          if "$TOOLCHAIN/llvm-readelf" -d "$ENGINE" | grep -q 'libc++_shared.so'; then
+            echo "Unexpected dependency on libc++_shared.so" >&2
+            exit 1
+          fi
+
+      - name: Upload engine artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arasan-android-arm64-neon-dotprod
+          path: bin/arasanx-64-neon
+          if-no-files-found: error
