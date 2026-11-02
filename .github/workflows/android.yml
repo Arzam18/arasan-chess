@@ -1,87 +1,67 @@
-name: Build Arasan Android ARM64
+name: Build Arasan for Android ARM64 (NEON + Dotprod, Embedded NNUE)
 
 on:
   workflow_dispatch:
   push:
-    branches: [ "*" ]
-  pull_request:
-    branches: [ "*" ]
+    branches: [ "master" ]
 
 jobs:
-  build-android-arm64:
-    runs-on: ubuntu-latest
-
+  build:
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout source
+      - name: Checkout source and NNUE LFS objects
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
 
-      - name: Initialize engine tablebase dependency only
-        run: git submodule update --init --recursive -- src/syzygy
-
-      - name: Install build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y make gawk
-
-      - name: Locate Android NDK
+      - name: Locate and stage the single Arasan NNUE network
         shell: bash
         run: |
-          NDK_DIR="${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}"
-          if [[ -z "$NDK_DIR" || ! -x "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" ]]; then
-            SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-            NDK_DIR="$(find "$SDK_DIR/ndk" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort -V | tail -n 1)"
-          fi
-          if [[ -z "$NDK_DIR" || ! -x "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++" ]]; then
-            echo "Android NDK with the Linux x86_64 LLVM toolchain was not found." >&2
+          set -euo pipefail
+          mapfile -t networks < <(find network -maxdepth 1 -type f -name '*.nnue' -size +1M | sort)
+          if [ "${#networks[@]}" -ne 1 ]; then
+            echo "Expected exactly one real .nnue network in network/, found ${#networks[@]}"
+            find network -maxdepth 1 -type f -printf '%p (%s bytes)\n' || true
             exit 1
           fi
-          echo "ANDROID_NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"
-          echo "Using Android NDK: $NDK_DIR"
+          echo "Using NNUE: ${networks[0]}"
+          mkdir -p build bin
+          cp "${networks[0]}" build/nnue_network.bin
+          test "$(stat -c%s build/nnue_network.bin)" -gt 1000000
 
-      - name: Build Arasan engine (ARM64 NEON + Dotprod, API 24)
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          add-to-path: true
+
+      - name: Embed NNUE and build engine only
         shell: bash
         run: |
           set -euo pipefail
           TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
-
-          test -f src/syzygy/src/tbprobe.c || {
-            echo "Fathom/Syzygy submodule is missing." >&2
-            exit 1
-          }
-
-          rm -rf build bin profile prof_data
-
-          make -C src -j"$(nproc)" default \
+          mkdir -p build bin
+          (cd build && "$TOOLCHAIN/llvm-objcopy" -I binary -O elf64-littleaarch64 -B aarch64 \
+            nnue_network.bin nnue_network.o)
+          cd src
+          make -j"$(nproc)" \
             CC="$TOOLCHAIN/aarch64-linux-android24-clang++" \
-            ARCH=aarch64 \
-            BUILD_TYPE=neon \
-            ARASAN_VERSION=26.1 \
-            NETWORK=arasanv9-20261023.nnue \
-            CXXFLAGS="-march=armv8.2-a+dotprod -mtune=cortex-a76" \
-            LDFLAGS="-fuse-ld=lld" \
-            LTO= \
-            CXXLIB="-static-libstdc++" \
-            LIBS="-lc -lm" \
-            SMPLIB=""
+            ARCH=aarch64 BUILD_TYPE=neon \
+            CXXFLAGS="-march=armv8.2-a+dotprod -mtune=cortex-a76 -DARASAN_EMBED_NNUE -static-libstdc++" \
+            LTO= LIBS="-lm" SMPLIB= \
+            LDFLAGS="-fuse-ld=lld"
+          cd ..
+          "$TOOLCHAIN/llvm-strip" bin/arasanx-*
+          test -s bin/arasanx-*
+          echo "--- Final executable ---"
+          ls -lh bin/arasanx-*
+          "$TOOLCHAIN/llvm-readelf" -h bin/arasanx-* | grep -E 'Class:|Machine:'
+          "$TOOLCHAIN/llvm-nm" bin/arasanx-* | grep -E '_binary_nnue_network_bin_(start|end)' || true
 
-          ENGINE="bin/arasanx-64-neon"
-          test -s "$ENGINE"
-          "$TOOLCHAIN/llvm-strip" --strip-unneeded "$ENGINE"
-
-          echo "--- Binary ---"
-          ls -lh "$ENGINE"
-          file "$ENGINE"
-          "$TOOLCHAIN/llvm-readelf" -h "$ENGINE"
-
-          "$TOOLCHAIN/llvm-readelf" -h "$ENGINE" | grep -q 'AArch64'
-          if "$TOOLCHAIN/llvm-readelf" -d "$ENGINE" | grep -q 'libc++_shared.so'; then
-            echo "Unexpected dependency on libc++_shared.so" >&2
-            exit 1
-          fi
-
-      - name: Upload engine artifact
+      - name: Upload single self-contained engine
         uses: actions/upload-artifact@v4
         with:
-          name: arasan-android-arm64-neon-dotprod
-          path: bin/arasanx-64-neon
+          name: arasan-android-arm64-neon-dotprod-embedded-nnue
+          path: bin/arasanx-*
           if-no-files-found: error
