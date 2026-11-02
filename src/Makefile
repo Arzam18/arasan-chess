@@ -115,8 +115,6 @@ endif
 
 LBITS := $(shell getconf LONG_BIT)
 LIBS := -lc -lm
-# Override for toolchains that use a different C++ runtime (e.g. Android NDK libc++).
-CXXLIB ?= -lstdc++
 
 ifdef EXE
 ARASANX := $(EXE)
@@ -394,7 +392,7 @@ SORTPGN_SOURCES = sortpgn.cpp $(UTIL_SOURCES)
 BULLETSTATS_SOURCES = bulletstats.cpp $(UTIL_SOURCES)
 
 ARASANX_PROFILE_OBJS := $(patsubst %.cpp, $(PROFILE)/%.o, $(ARASANX_SOURCES)) $(ASM_PROFILE_OBJS) $(TB_PROFILE_OBJS)
-ARASANX_OBJS    := $(patsubst %.cpp, $(BUILD)/%.o, $(ARASANX_SOURCES)) $(TB_OBJS)
+ARASANX_OBJS    := $(patsubst %.cpp, $(BUILD)/%.o, $(ARASANX_SOURCES)) $(TB_OBJS) $(BUILD)/nnue_network.o
 MAKEBOOK_OBJS   := $(patsubst %.cpp, $(BUILD)/%.o, $(MAKEBOOK_SOURCES)) $(TB_OBJS)
 ECOCODER_OBJS   := $(patsubst %.cpp, $(BUILD)/%.o, $(ECOCODER_SOURCES)) $(TB_OBJS)
 PLAYCHESS_OBJS  := $(patsubst %.cpp, $(BUILD)/%.o, $(PLAYCHESS_SOURCES)) $(TB_OBJS)
@@ -405,28 +403,28 @@ BULLETSTATS_OBJS := $(patsubst %.cpp, $(BUILD)/%.o, $(BULLETSTATS_SOURCES)) $(TB
 UNIT_OBJS       := $(patsubst %.cpp, $(BUILD)/%.o, $(UNIT_SOURCES)) $(TB_OBJS)
 
 $(EXPORT)/makebook:  $(MAKEBOOK_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(MAKEBOOK_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/makebook $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(MAKEBOOK_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/makebook -lstdc++ $(LIBS) $(SMPLIB)
 
 $(EXPORT)/ecocoder:  $(ECOCODER_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(ECOCODER_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/ecocoder $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(ECOCODER_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/ecocoder -lstdc++ $(LIBS) $(SMPLIB)
 
 $(EXPORT)/playchess:  $(PLAYCHESS_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(PLAYCHESS_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/playchess $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(PLAYCHESS_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/playchess -lstdc++ $(LIBS) $(SMPLIB)
 
 $(EXPORT)/selfplay:  $(SELFPLAY_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(SELFPLAY_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/selfplay $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(SELFPLAY_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/selfplay -lstdc++ $(LIBS) $(SMPLIB)
 
 $(EXPORT)/blundercheck:  $(BLUNDERCHECK_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(BLUNDERCHECK_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/blundercheck $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(BLUNDERCHECK_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/blundercheck -lstdc++ $(LIBS) $(SMPLIB)
 
 $(EXPORT)/sortpgn:  $(SORTPGN_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(SORTPGN_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/sortpgn $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(SORTPGN_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/sortpgn -lstdc++ $(LIBS) $(SMPLIB)
 
 $(EXPORT)/bulletstats:  $(BULLETSTATS_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(BULLETSTATS_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/bulletstats $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(BULLETSTATS_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/bulletstats -lstdc++ $(LIBS) $(SMPLIB)
 
 $(EXPORT)/unit: $(UNIT_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(UNIT_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/unit $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(OPT) $(UNIT_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/unit -lstdc++ $(LIBS) $(SMPLIB)
 
 ifeq ($(PASS),1)
 profile: dirs $(PROFILE)/arasanx
@@ -436,15 +434,15 @@ endif
 
 ifeq ($(PASS),1)
 $(PROFILE)/arasanx:  $(ARASANX_PROFILE_OBJS)
-	cd $(PROFILE) && $(LD) $(PROF_GEN) $(ARASANX_PROFILE_OBJS) $(DEBUG) $(CXXFLAGS) -o $(PROFILE)/arasanx $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(PROFILE) && $(LD) $(PROF_GEN) $(ARASANX_PROFILE_OBJS) $(DEBUG) $(CXXFLAGS) -o $(PROFILE)/arasanx -lstdc++ $(LIBS) $(SMPLIB)
 else
 ifeq ($(PASS),2)
 $(EXPORT)/$(ARASANX):  $(ARASANX_PROFILE_OBJS)
-	cd $(PROFILE) && $(LD) $(PROF_USE) $(OPT) $(LTO) $(ARASANX_PROFILE_OBJS) $(DEBUG) $(CXXFLAGS) -o $@ $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(PROFILE) && $(LD) $(PROF_USE) $(OPT) $(LTO) $(ARASANX_PROFILE_OBJS) $(DEBUG) $(CXXFLAGS) -o $@ -lstdc++ $(LIBS) $(SMPLIB)
 else
 # non-PGO build
 $(EXPORT)/$(ARASANX):  $(ARASANX_OBJS)
-	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(ARASANX_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/$(ARASANX) $(CXXLIB) $(LIBS) $(SMPLIB)
+	cd $(BUILD) && $(LD) $(LDFLAGS) $(LTO) $(ARASANX_OBJS) $(DEBUG) $(CXXFLAGS) -o $(EXPORT)/$(ARASANX) $(LIBS) $(SMPLIB)
 endif
 endif
 

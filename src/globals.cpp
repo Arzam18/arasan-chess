@@ -25,6 +25,12 @@ extern "C" {
 #endif
 #include <cstring>
 #include <cstdlib>
+#include <sstream>
+
+#ifdef ARASAN_EMBED_NNUE
+extern "C" const unsigned char _binary_nnue_network_bin_start[];
+extern "C" const unsigned char _binary_nnue_network_bin_end[];
+#endif
 #if defined(__APPLE__) && !defined(NEON)
 // no <filestem> on old Intel clang
 #define MAC_INTEL
@@ -168,22 +174,37 @@ bool globals::initGlobals() {
 }
 
 bool globals::loadNetwork(const std::string &fname, bool verbose) {
-    std::ifstream in(fname, std::ios_base::in | std::ios_base::binary);
-    if (in.fail()) {
-        if (verbose) {
-            std::cout << "warning: failed to open network file " << fname << ": " <<
-                strerror(errno) << std::endl;
+    // Prefer an explicitly supplied network file. Android builds also carry the
+    // default NNUE data inside the executable, so no sidecar file is required.
+    std::ifstream file(fname, std::ios_base::in | std::ios_base::binary);
+    if (file.is_open()) {
+        file >> network;
+        if (file.fail()) {
+            if (verbose) std::cout << "warning: failure reading network file " << fname << std::endl;
+            return false;
         }
-        return false;
-    }
-    in >> network;
-    if (in.fail()) {
-        if (verbose) std::cout << "warning: failure reading network file " << fname << std::endl;
-        return false;
-    } else {
         if (verbose) std::cout << "loaded network from file " << fname << std::endl;
         return true;
     }
+#ifdef ARASAN_EMBED_NNUE
+    const auto size = static_cast<size_t>(_binary_nnue_network_bin_end -
+                                          _binary_nnue_network_bin_start);
+    std::string data(reinterpret_cast<const char *>(_binary_nnue_network_bin_start), size);
+    std::istringstream embedded(data, std::ios_base::in | std::ios_base::binary);
+    embedded >> network;
+    if (embedded.fail()) {
+        if (verbose) std::cout << "warning: failed to read embedded NNUE network" << std::endl;
+        return false;
+    }
+    if (verbose) std::cout << "loaded embedded NNUE network (" << size << " bytes)" << std::endl;
+    return true;
+#else
+    if (verbose) {
+        std::cout << "warning: failed to open network file " << fname << ": " <<
+            strerror(errno) << std::endl;
+    }
+    return false;
+#endif
 }
 
 void CDECL globals::cleanupGlobals(void) {
