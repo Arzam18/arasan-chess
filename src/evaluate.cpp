@@ -43,8 +43,6 @@ static void printPairIndices(const nnue::PPIndexArray &indices, size_t count) {
 }
 #endif
 
-#define USE_FINNY
-
 void nnue::Evaluator::clearCache() {
     for (unsigned i = 0; i < 2; i++) { // sides
         for (unsigned j = 0; j < nnue::NetworkParams::KING_BUCKETS; j++) { // buckets
@@ -253,9 +251,11 @@ void nnue::Evaluator::updateAccum(const nnue::Network &network, const Board &boa
         const DirtyState &ds = n->dirty[0];
         if ((dn == 0) ||
             (n ->ply == 0) ||
-            (TypeOfPiece(ds.piece) == King && Network::FeatureXformer::PSQ::needsRefresh(c, ds.from, ds.to)) ||
+            (TypeOfPiece(ds.piece) == King && ColorOfPiece(ds.piece) == c &&
+             Network::FeatureXformer::PSQ::needsRefresh(c, ds.from, ds.to)) ||
             ((gain -= dn + 1) < 0)) {
-            // previous move was null, or was a King move that invalidates the accumulator,
+            // previous move was null, or was a move of the king of this perspective that
+            // invalidates the accumulator (a move of the other king is an ordinary change),
             // or we can't get any gain from incremental update
             incrementalOk = false;
             break;
@@ -267,14 +267,8 @@ void nnue::Evaluator::updateAccum(const nnue::Network &network, const Board &boa
         // a previous position was found with usable data
         updateAccumIncremental(network, n, node, c);
     } else {
-#ifdef USE_FINNY
         // update from cache (the cache includes pawn pair features)
         finnyUpdate(network, board, node, c, targetHalf);
-#else
-        FeatureChanges features;
-        getFeatures(board, c, features);
-        network.updateAccum(features, targetHalf, node->accum);
-#endif
     }
     node->accum.setState(targetHalf, AccumulatorState::Computed);
 }
@@ -370,11 +364,13 @@ void nnue::Evaluator::finnyUpdate(const nnue::Network &network, const Board &boa
         printPairIndices(changes.ppRemoved, changes.ppRemovedCount);
 #endif
     }
-    // The cache entry also includes threat features, again consistent with the king's side
-    // of the board.
-    Network::FeatureXformer::Threat::getThreatDeltas(
-        side, kp, cacheEntry.occupancies, boardOcc, changes.threatAdded, changes.threatAddedCount,
-        changes.threatRemoved, changes.threatRemovedCount);
+    // We do not try to calculate threat features based on the finny cache, because large diffs
+    // in threats may exist between a cached entry and the current position. We just rebuild the
+    // threat set here.
+    FeatureChanges threats;
+    threats.threatAddedCount = Network::FeatureXformer::Threat::getActiveThreats(
+        side, kp, boardOcc, threats.threatAdded);
+    network.getTransformer()->prefetchThreats(threats);
     // update the cache entry's accumulator, based on the index diffs. We always use the lower half
     // of the cache's accumulator.
     network.updateAccum(cacheEntry.acc, AccumulatorHalf::Lower, cacheEntry.acc, AccumulatorHalf::Lower,
@@ -383,7 +379,8 @@ void nnue::Evaluator::finnyUpdate(const nnue::Network &network, const Board &boa
     // cacheEntry.occupancies = node->occupancies;
     bulkCopy<N_COLORS * N_PIECES>(reinterpret_cast<const Bitboard *>(&boardOcc),
                                   reinterpret_cast<Bitboard *>(&cacheEntry.occupancies));
-    // update node accumulator with newly computed data from the cache
-    accum.copy_half(targetHalf, cacheEntry.acc, AccumulatorHalf::Lower);
+    // The node's accumulator is the cache entry's, plus all the threat features. The update has
+    // separate source and target, so this does not need a separate copy of the accumulator.
+    network.updateAccum(cacheEntry.acc, AccumulatorHalf::Lower, accum, targetHalf, threats);
     accum.setState(targetHalf, AccumulatorState::Computed);
 }
